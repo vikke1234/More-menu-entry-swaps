@@ -24,7 +24,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.moremenuswaps;
+package com.hotkeyablemenuswaps;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedHashMultimap;
@@ -64,16 +64,16 @@ import static com.google.common.base.Predicates.alwaysTrue;
 // wont-fix - when using shift as a hotkey it prevents some other hotkeys (e.g. lowercase "t") from being activated while shift is down.
 
 @PluginDescriptor(
-	name = "More Menu Swaps",
+	name = "Hotkeyable Menu Swaps",
 	tags = {"entry", "swapper"}
 )
-public class MoreMenuSwapsPlugin extends Plugin implements KeyListener
+public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 {
 	@Inject
 	private Client client;
 
 	@Inject
-	private MoreMenuSwapsConfig config;
+	private HotkeyableMenuSwapsConfig config;
 
 	@Inject
 	private KeyManager keyManager;
@@ -85,9 +85,9 @@ public class MoreMenuSwapsPlugin extends Plugin implements KeyListener
 	private TreeRingSwap hotkeyTreeRingSwap = null;
 
 	@Provides
-	MoreMenuSwapsConfig provideConfig(ConfigManager configManager)
+	HotkeyableMenuSwapsConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(MoreMenuSwapsConfig.class);
+		return configManager.getConfig(HotkeyableMenuSwapsConfig.class);
 	}
 
 	@Override
@@ -119,7 +119,7 @@ public class MoreMenuSwapsPlugin extends Plugin implements KeyListener
 	private OccultAltarSwap getCurrentOccultAltarSwap() {
 		OccultAltarSwap currentSpellbook = OccultAltarSwap.getCurrentSpellbookMenuOption(client);
 		if (hotkeyOccultAltarSwap == null || hotkeyOccultAltarSwap == currentSpellbook) {
-			MoreMenuSwapsConfig.OccultAltarLeftClick leftClickSwap = config.getOccultAltarLeftClickSwap();
+			HotkeyableMenuSwapsConfig.OccultAltarLeftClick leftClickSwap = config.getOccultAltarLeftClickSwap();
 			return (leftClickSwap.getFirstOption() == currentSpellbook)
 					? leftClickSwap.getSecondOption()
 					: leftClickSwap.getFirstOption();

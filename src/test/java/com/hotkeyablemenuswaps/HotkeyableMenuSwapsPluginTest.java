@@ -1,13 +1,13 @@
-package com.moremenuswaps;
+package com.hotkeyablemenuswaps;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class MoreMenuSwapsPluginTest
+public class HotkeyableMenuSwapsPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(MoreMenuSwapsPlugin.class);
+		ExternalPluginManager.loadBuiltin(HotkeyableMenuSwapsPlugin.class);
 		RuneLite.main(args);
 	}
 }

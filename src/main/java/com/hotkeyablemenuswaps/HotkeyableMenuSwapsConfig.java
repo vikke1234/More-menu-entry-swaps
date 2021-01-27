@@ -1,4 +1,4 @@
-package com.moremenuswaps;
+package com.hotkeyablemenuswaps;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -8,10 +8,10 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Keybind;
 
-import static com.moremenuswaps.OccultAltarSwap.*;
+import static com.hotkeyablemenuswaps.OccultAltarSwap.*;
 
-@ConfigGroup("moremenuswaps")
-public interface MoreMenuSwapsConfig extends Config
+@ConfigGroup("hotkeyablemenuswaps")
+public interface HotkeyableMenuSwapsConfig extends Config
 {
 	@ConfigSection(
 			name = "Bank",
