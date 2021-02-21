@@ -38,6 +38,7 @@ import net.runelite.api.MenuEntry;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
@@ -83,6 +84,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	// If a hotkey corresponding to a swap is currently held, these variables will be non-null.
 	private OccultAltarSwap hotkeyOccultAltarSwap = null;
 	private TreeRingSwap hotkeyTreeRingSwap = null;
+	private boolean swapUse = false;
 
 	@Provides
 	HotkeyableMenuSwapsConfig provideConfig(ConfigManager configManager)
@@ -137,19 +139,35 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// not used.
 	}
 
+	private volatile int bankSwapVarbit = 0;
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		int setting = client.getVarbitValue(6590);
+
+		if (bankSwapVarbit != setting)
+		{
+			bankSwapVarbit = client.getVarbitValue(6590);
+		}
+	}
+
+	// indexes correspond to values of the varbit that represents the current left-click option.
+	private static final BankSwapMode[] bankSwapModes = {
+			BankSwapMode.SWAP_1,
+			BankSwapMode.SWAP_5,
+			BankSwapMode.SWAP_10,
+			BankSwapMode.SWAP_X,
+			BankSwapMode.SWAP_ALL
+	};
+
 	@Override
 	public void keyPressed(KeyEvent e)
 	{
 		// ignoring the current left click option allows one keybind to be used for two different swaps - e.g. the
 		// same keybind for both "1" and "all", which makes bank-1 accessible while the left-click option is set
 		// to "all" via the vanilla bank interface, without requiring an additional keybind.
-	    BankSwapMode currentLeftClick = new BankSwapMode[] {
-	    		BankSwapMode.SWAP_1,
-				BankSwapMode.SWAP_5,
-				BankSwapMode.SWAP_10,
-				BankSwapMode.SWAP_X,
-				BankSwapMode.SWAP_ALL
-	    }[client.getVarbitValue(6590)];
+		BankSwapMode currentLeftClick = bankSwapModes[bankSwapVarbit];
 
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
 			if (swapMode != currentLeftClick && (swapMode.getKeybind(config)).matches(e)) {
@@ -170,6 +188,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				hotkeyTreeRingSwap = treeRingSwap;
 				break;
 			}
+		}
+
+		if (config.getSwapUseHotkey().matches(e)) {
+			swapUse = true;
 		}
 	}
 
@@ -195,6 +217,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				hotkeyTreeRingSwap = null;
 				break;
 			}
+		}
+
+		if (config.getSwapUseHotkey().matches(e)) {
+			swapUse = false;
 		}
 	}
 
@@ -312,7 +338,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String option = Text.removeTags(menuEntry.getOption()).toLowerCase();
 		String target = Text.removeTags(menuEntry.getTarget()).toLowerCase();
 
-		// disgusting. But there isn't an easy way to implement some kind of custom predicate function or regex for the menu entry option.
+		// disgusting. But there isn't an easy way to implement some kind of custom predicate function or regex for the menu entry option without rewriting a lot of code.
 		if (target.equals("fairy ring") || target.equals("spiritual fairy tree")) {
 			if (option.startsWith("ring-")) {
 				option = option.substring("ring-".length());
@@ -320,6 +346,26 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			if (option.startsWith("last-destination")) {
 				option = "last-destination";
 			}
+		}
+
+		MenuAction menuAction = MenuAction.of(menuEntry.getType());
+		if (menuAction == MenuAction.ITEM_FIRST_OPTION
+				|| menuAction == MenuAction.ITEM_SECOND_OPTION
+				|| menuAction == MenuAction.ITEM_THIRD_OPTION
+				|| menuAction == MenuAction.ITEM_FOURTH_OPTION
+				|| menuAction == MenuAction.ITEM_FIFTH_OPTION
+				|| menuAction == MenuAction.ITEM_USE)
+		{
+			// Special case use shift click due to items not actually containing a "Use" option, making
+			// the client unable to perform the swap itself.
+			if (swapUse && !option.equals("use"))
+			{
+				swap("use", target, index, true);
+			}
+
+			// don't perform swaps on items when shift is held; instead prefer the client menu swap, which
+			// we may have overwrote
+			return;
 		}
 
 		Collection<Swap> swaps = this.swaps.get(option);

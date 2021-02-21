@@ -280,4 +280,23 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return Keybind.NOT_SET;
 	}
 
+	@ConfigSection(
+			name = "Inventory",
+			description = "Inventory menu entry swaps",
+			position = 3
+	)
+	String inventorySection = "inventory";
+
+	@ConfigItem(
+			keyName = "swapUseHotkey",
+			name = "Swap Use",
+			description = "swap \"Use\" on items in the inventory",
+			section = inventorySection,
+			position = 0
+	)
+	default Keybind getSwapUseHotkey()
+	{
+		return Keybind.NOT_SET;
+	}
+
 }
