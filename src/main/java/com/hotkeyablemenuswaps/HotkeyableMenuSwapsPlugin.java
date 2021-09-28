@@ -238,14 +238,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	public void onMenuEntryAdded(MenuEntryAdded menuEntryAdded) {
 		final int widgetGroupId = WidgetInfo.TO_GROUP(menuEntryAdded.getActionParam1());
 
+		final boolean isDepositBoxPlayerInventory = widgetGroupId == WidgetID.DEPOSIT_BOX_GROUP_ID;
+		final boolean isChambersOfXericStorageUnitPlayerInventory = widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_INVENTORY_GROUP_ID;
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x for deposit box interface and chambers of xeric storage unit.
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
 		if (currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_ALL_BUT_1
 				&& menuEntryAdded.getType() == MenuAction.CC_OP.getId()
-				&& (menuEntryAdded.getIdentifier() == 2 || menuEntryAdded.getIdentifier() == 1)
+				&& menuEntryAdded.getIdentifier() == (isDepositBoxPlayerInventory || isChambersOfXericStorageUnitPlayerInventory ? 1 : 2)
 				&& (menuEntryAdded.getOption().startsWith("Deposit-") || menuEntryAdded.getOption().startsWith("Store") || menuEntryAdded.getOption().startsWith("Donate"))) {
-			final int opId = widgetGroupId == WidgetID.DEPOSIT_BOX_GROUP_ID ? currentBankModeSwap.getDepositIdentifierDepositBox()
-					: widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_INVENTORY_GROUP_ID ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
+			final int opId = isDepositBoxPlayerInventory ? currentBankModeSwap.getDepositIdentifierDepositBox()
+					: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
 					: currentBankModeSwap.getDepositIdentifier();
 			final int actionId = opId >= 6 ? MenuAction.CC_OP_LOW_PRIORITY.getId() : MenuAction.CC_OP.getId();
 			bankModeSwap(actionId, opId);
