@@ -26,10 +26,21 @@
  */
 package com.hotkeyablemenuswaps;
 
+import static com.google.common.base.Predicates.alwaysTrue;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.inject.Inject;
 import com.google.inject.Provides;
+import java.awt.event.KeyEvent;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Value;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -42,22 +53,17 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.Keybind;
+import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperConfig;
+import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperPlugin;
 import net.runelite.client.util.Text;
-
-import javax.inject.Inject;
-import java.awt.event.KeyEvent;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
-import static com.google.common.base.Predicates.alwaysTrue;
 
 // TODO when you press a key, then press and release a different key, the original key is no longer used for the keybind.
 // Also, modifier keys cannot be activated if they are pressed when the client does not have focus, which is annoying.
@@ -68,6 +74,7 @@ import static com.google.common.base.Predicates.alwaysTrue;
 	name = "Hotkeyable Menu Swaps",
 	tags = {"entry", "swapper"}
 )
+@PluginDependency(MenuEntrySwapperPlugin.class)
 public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 {
 	@Inject
@@ -79,12 +86,22 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Inject
 	private KeyManager keyManager;
 
-	private BankSwapMode currentBankModeSwap = BankSwapMode.OFF;
+	@Inject
+	private ConfigManager configManager;
 
-	// If a hotkey corresponding to a swap is currently held, these variables will be non-null.
-	private OccultAltarSwap hotkeyOccultAltarSwap = null;
-	private TreeRingSwap hotkeyTreeRingSwap = null;
-	private boolean swapUse = false;
+	@Inject
+	private MenuEntrySwapperConfig menuEntrySwapperConfig;
+
+	// If a hotkey corresponding to a swap is currently held, these variables will be non-null. currentBankModeSwap is an exception because it uses menu entry swapper's bank swap enum, which already has an "off" value.
+	// These variables do not factor in left-click swaps.
+	private volatile BankSwapMode currentBankModeSwap;
+	private volatile OccultAltarSwap hotkeyOccultAltarSwap;
+	private volatile TreeRingSwap hotkeyTreeRingSwap;
+	private volatile boolean swapUse;
+	private volatile boolean swapJewelleryBox;
+	private volatile PortalNexusSwap swapPortalNexus;
+	private volatile PortalNexusXericsTalismanSwap swapPortalNexusXericsTalisman;
+	private volatile PortalNexusDigsitePendantSwap swapPortalNexusDigsitePendant;
 
 	@Provides
 	HotkeyableMenuSwapsConfig provideConfig(ConfigManager configManager)
@@ -94,9 +111,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Override
 	protected void startUp() {
-		currentBankModeSwap = BankSwapMode.OFF;
-		hotkeyOccultAltarSwap = null;
-		hotkeyTreeRingSwap = null;
+		resetHotkeys();
 
 		keyManager.registerKeyListener(this);
 
@@ -123,10 +138,107 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (hotkeyOccultAltarSwap == null || hotkeyOccultAltarSwap == currentSpellbook) {
 			HotkeyableMenuSwapsConfig.OccultAltarLeftClick leftClickSwap = config.getOccultAltarLeftClickSwap();
 			return (leftClickSwap.getFirstOption() == currentSpellbook)
-					? leftClickSwap.getSecondOption()
-					: leftClickSwap.getFirstOption();
+				? leftClickSwap.getSecondOption()
+				: leftClickSwap.getFirstOption();
 		} else {
 			return hotkeyOccultAltarSwap;
+		}
+	}
+
+	private boolean swapJewelleryBoxSpecificOption() {
+		return swapJewelleryBox && !vanillaJewelleryBoxSwapEnabled();
+	}
+
+	private boolean swapJewelleryBoxTeleportMenuOption() {
+		return swapJewelleryBox && vanillaJewelleryBoxSwapEnabled();
+	}
+
+	private boolean vanillaJewelleryBoxSwapEnabled()
+	{
+		return (boolean) configManager.getConfiguration(RuneLiteConfig.GROUP_NAME, "menuentryswapperplugin", Boolean.class) && menuEntrySwapperConfig.swapJewelleryBox();
+	}
+
+	private boolean vanillaPortalNexusSwapEnabled() {
+		return (boolean) configManager.getConfiguration(RuneLiteConfig.GROUP_NAME, "menuentryswapperplugin", Boolean.class) && menuEntrySwapperConfig.swapPortalNexus();
+	}
+
+	/**
+	 * Takes into account left-click swap in addition to any hotkeys held down.
+	 */
+	private PortalNexusDigsitePendantSwap getPortalNexusDigsitePendantSwap()
+	{
+		return swapPortalNexusDigsitePendant != null ? swapPortalNexusDigsitePendant : config.pohDigsitePendantLeftClick();
+	}
+
+	/**
+	 * Takes into account left-click swap in addition to any hotkeys held down.
+	 */
+	private PortalNexusXericsTalismanSwap getPortalNexusXericsTalismanSwap()
+	{
+		return swapPortalNexusXericsTalisman != null ? swapPortalNexusXericsTalisman : config.pohXericsTalismanLeftClick();
+	}
+
+//	@Getter
+//	@AllArgsConstructor
+//	public enum JewelleryBoxSwap {
+//		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanTeleportMenu),
+//		DESTINATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanTeleportMenu),
+//		;
+//
+//		private final MenuAction menuAction;
+//		private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
+//
+//		public Keybind getKeybind(HotkeyableMenuSwapsConfig config) {
+//			return keybindFunction.apply(config);
+//		}
+//	}
+//
+	@Getter
+	@AllArgsConstructor
+	public enum PortalNexusSwap {
+		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::portalNexusDestinationSwapHotKey),
+		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::portalNexusTeleportMenuSwapHotKey),
+		CONFIGURATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::portalNexusConfigurationSwapHotKey),
+		;
+
+		private final MenuAction menuAction;
+		private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
+
+		public Keybind getKeybind(HotkeyableMenuSwapsConfig config) {
+			return keybindFunction.apply(config);
+		}
+	}
+
+	@Getter
+	@AllArgsConstructor
+	public enum PortalNexusXericsTalismanSwap {
+		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanDestination),
+		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanTeleportMenu),
+		CONFIGURATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanConfiguration),
+		;
+
+		private final MenuAction menuAction;
+		private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
+
+		public Keybind getKeybind(HotkeyableMenuSwapsConfig config) {
+			return keybindFunction.apply(config);
+		}
+	}
+
+	@Getter
+	@AllArgsConstructor
+	public enum PortalNexusDigsitePendantSwap
+	{
+		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::pohDigsitePendantDestination),
+		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::pohDigsitePendantTeleportMenu),
+		CONFIGURATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::pohDigsitePendantConfiguration),
+		;
+
+		private final MenuAction menuAction;
+		private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
+
+		public Keybind getKeybind(HotkeyableMenuSwapsConfig config) {
+			return keybindFunction.apply(config);
 		}
 	}
 
@@ -190,8 +302,33 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			}
 		}
 
+		for (PortalNexusSwap option : PortalNexusSwap.values()) {
+			if ((option.getKeybind(config)).matches(e)) {
+				swapPortalNexus = option;
+				break;
+			}
+		}
+
+		for (PortalNexusXericsTalismanSwap option : PortalNexusXericsTalismanSwap.values()) {
+			if ((option.getKeybind(config)).matches(e)) {
+				swapPortalNexusXericsTalisman = option;
+				break;
+			}
+		}
+
+		for (PortalNexusDigsitePendantSwap option : PortalNexusDigsitePendantSwap.values()) {
+			if ((option.getKeybind(config)).matches(e)) {
+				swapPortalNexusDigsitePendant = option;
+				break;
+			}
+		}
+
 		if (config.getSwapUseHotkey().matches(e)) {
 			swapUse = true;
+		}
+
+		if (config.getSwapJewelleryBoxHotkey().matches(e)) {
+			swapJewelleryBox = true;
 		}
 	}
 
@@ -199,28 +336,53 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	public void keyReleased(KeyEvent e)
 	{
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
-			if ((swapMode.getKeybind(config)).matches(e) && currentBankModeSwap.equals(swapMode)) {
+			if ((swapMode.getKeybind(config)).matches(e) && swapMode == currentBankModeSwap) {
 				currentBankModeSwap = BankSwapMode.OFF;
 				break;
 			}
 		}
 
 		for (OccultAltarSwap altarOption : OccultAltarSwap.values()) {
-			if ((altarOption.getKeybind(config)).matches(e) && altarOption.equals(hotkeyOccultAltarSwap)) {
+			if ((altarOption.getKeybind(config)).matches(e) && altarOption == hotkeyOccultAltarSwap) {
 				hotkeyOccultAltarSwap = null;
 				break;
 			}
 		}
 
 		for (TreeRingSwap treeRingSwap : TreeRingSwap.values()) {
-			if ((treeRingSwap.getKeybind(config)).matches(e) && treeRingSwap.equals(hotkeyTreeRingSwap)) {
+			if ((treeRingSwap.getKeybind(config)).matches(e) && treeRingSwap == hotkeyTreeRingSwap) {
 				hotkeyTreeRingSwap = null;
+				break;
+			}
+		}
+
+		for (PortalNexusSwap option : PortalNexusSwap.values()) {
+			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexus) {
+				swapPortalNexus = null;
+				break;
+			}
+		}
+
+		for (PortalNexusXericsTalismanSwap option : PortalNexusXericsTalismanSwap.values()) {
+			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexusXericsTalisman) {
+				swapPortalNexusXericsTalisman = null;
+				break;
+			}
+		}
+
+		for (PortalNexusDigsitePendantSwap option : PortalNexusDigsitePendantSwap.values()) {
+			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexusDigsitePendant) {
+				swapPortalNexusDigsitePendant = null;
 				break;
 			}
 		}
 
 		if (config.getSwapUseHotkey().matches(e)) {
 			swapUse = false;
+		}
+
+		if (config.getSwapJewelleryBoxHotkey().matches(e)) {
+			swapJewelleryBox = false;
 		}
 	}
 
@@ -229,12 +391,24 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	{
 		if (!event.isFocused())
 		{
-			currentBankModeSwap = BankSwapMode.OFF;
+			resetHotkeys();
 		}
 	}
 
+	private void resetHotkeys()
+	{
+		currentBankModeSwap = BankSwapMode.OFF;
+		hotkeyOccultAltarSwap = null;
+		hotkeyTreeRingSwap = null;
+		swapUse = false;
+		swapJewelleryBox = false;
+		swapPortalNexus = null;
+		swapPortalNexusXericsTalisman = null;
+		swapPortalNexusDigsitePendant = null;
+	}
+
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
-	@Subscribe
+	@Subscribe(priority = -1)
 	public void onMenuEntryAdded(MenuEntryAdded menuEntryAdded) {
 		final int widgetGroupId = WidgetInfo.TO_GROUP(menuEntryAdded.getActionParam1());
 
@@ -316,10 +490,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		// Perform swaps
-		idx = 0;
-		for (MenuEntry entry : menuEntries)
+		for (int i = 0; i < menuEntries.length; i++)
 		{
-			swapMenuEntry(idx++, entry);
+			swapMenuEntry(menuEntries, i);
 		}
 	}
 
@@ -334,21 +507,17 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		private boolean strict;
 	}
 
+	/*
+	 * Note to self: The way the menu entry swapper does most swaps is that it looks through the menu from bottom (0) to top (menuEntries.length) until it find the option to swap *with* (i.e. the top option e.g. "talk-to"), then it goes back in the menu to find the most recent menuentry that matches the criteria of the *swapped* option (e.g. "teleport").
+	 */
+
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
-	private void swapMenuEntry(int index, MenuEntry menuEntry)
+	private void swapMenuEntry(MenuEntry[] menuEntries, int index)
 	{
+		MenuEntry menuEntry = menuEntries[index];
+
 		String option = Text.removeTags(menuEntry.getOption()).toLowerCase();
 		String target = Text.removeTags(menuEntry.getTarget()).toLowerCase();
-
-		// disgusting. But there isn't an easy way to implement some kind of custom predicate function or regex for the menu entry option without rewriting a lot of code.
-		if (target.equals("fairy ring") || target.equals("spiritual fairy tree")) {
-			if (option.startsWith("ring-")) {
-				option = option.substring("ring-".length());
-			}
-			if (option.startsWith("last-destination")) {
-				option = "last-destination";
-			}
-		}
 
 		MenuAction menuAction = menuEntry.getType();
 		if (menuAction == MenuAction.ITEM_FIRST_OPTION
@@ -358,16 +527,81 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				|| menuAction == MenuAction.ITEM_FIFTH_OPTION
 				|| menuAction == MenuAction.ITEM_USE)
 		{
-			// Special case use shift click due to items not actually containing a "Use" option, making
-			// the client unable to perform the swap itself.
-			if (swapUse && !option.equals("use"))
+			if (swapUse && option.equals("use"))
 			{
-				swap("use", target, index, true);
+				swap(optionIndexes, menuEntries, index, menuEntries.length - 1);
 			}
-
-			// don't perform swaps on items when shift is held; instead prefer the client menu swap, which
-			// we may have overwrote
 			return;
+		}
+
+		if (target.equals("portal nexus") && swapPortalNexus != null) {
+			boolean vanillaMesSwapEnabled = vanillaPortalNexusSwapEnabled();
+			boolean hasLeftClickTeleportConfigured = menuEntry.getIdentifier() < 33408 || menuEntry.getIdentifier() > 33410;
+			boolean destinationIsLeftClick = !vanillaMesSwapEnabled && hasLeftClickTeleportConfigured;
+			if (destinationIsLeftClick && menuAction == MenuAction.GAME_OBJECT_FIRST_OPTION)
+			{
+				swap(swapPortalNexus.menuAction, target, index);
+				return;
+			} else if (!destinationIsLeftClick && menuAction == MenuAction.GAME_OBJECT_SECOND_OPTION) {
+				swap(swapPortalNexus.menuAction, target, index);
+				return;
+			}
+		}
+
+		if (target.equals("xeric's talisman")) {
+			PortalNexusXericsTalismanSwap portalNexusXericsTalismanSwap = getPortalNexusXericsTalismanSwap();
+			if (portalNexusXericsTalismanSwap != null)
+			{
+				// https://chisel.weirdgloop.org/moid/object_name.html#/xeric's%20talisman/
+				boolean hasLeftClickTeleportConfigured = menuEntry.getIdentifier() != 33419;
+				if (hasLeftClickTeleportConfigured && menuAction == MenuAction.GAME_OBJECT_FIRST_OPTION)
+				{
+					swap(portalNexusXericsTalismanSwap.menuAction, target, index);
+					return;
+				}
+				else if (!hasLeftClickTeleportConfigured && menuAction == MenuAction.GAME_OBJECT_SECOND_OPTION)
+				{
+					swap(portalNexusXericsTalismanSwap.menuAction, target, index);
+					return;
+				}
+			}
+		}
+
+		if (target.equals("digsite pendant")) {
+			PortalNexusDigsitePendantSwap portalNexusDigsitePendantSwap = getPortalNexusDigsitePendantSwap();
+			if (portalNexusDigsitePendantSwap != null)
+			{
+				// https://chisel.weirdgloop.org/moid/object_name.html#/digsite%20pendant/
+				boolean hasLeftClickTeleportConfigured = menuEntry.getIdentifier() != 33420;
+				if (hasLeftClickTeleportConfigured && menuAction == MenuAction.GAME_OBJECT_FIRST_OPTION)
+				{
+					swap(portalNexusDigsitePendantSwap.menuAction, target, index);
+					return;
+				}
+				else if (!hasLeftClickTeleportConfigured && menuAction == MenuAction.GAME_OBJECT_SECOND_OPTION)
+				{
+					swap(portalNexusDigsitePendantSwap.menuAction, target, index);
+					return;
+				}
+			}
+		}
+
+		if (menuAction == MenuAction.GAME_OBJECT_SECOND_OPTION && target.endsWith("jewellery box") && swapJewelleryBoxSpecificOption()) { // second option is teleport menu
+			swap(MenuAction.GAME_OBJECT_THIRD_OPTION, target, index);
+			return;
+		} else if (menuAction == MenuAction.GAME_OBJECT_THIRD_OPTION && target.endsWith("jewellery box") && swapJewelleryBoxTeleportMenuOption()) { // third option is the specific option (e.g. "Edgeville")
+			swap(MenuAction.GAME_OBJECT_SECOND_OPTION, target, index);
+			return;
+		}
+
+		// disgusting. But there isn't an easy way to implement some kind of custom predicate function or regex for the menu entry option without rewriting a lot of code.
+		if (target.equals("fairy ring") || target.equals("spiritual fairy tree")) {
+			if (option.startsWith("ring-")) {
+				option = option.substring("ring-".length());
+			}
+			if (option.startsWith("last-destination")) {
+				option = "last-destination";
+			}
 		}
 
 		Collection<Swap> swaps = this.swaps.get(option);
@@ -381,6 +615,12 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				}
 			}
 		}
+	}
+
+	// Copy-pasted from the official runelite menu entry swapper plugin.
+	private void swap(String option, Predicate<String> targetPredicate, String swappedOption, Supplier<Boolean> enabled)
+	{
+		swaps.put(option, new Swap(alwaysTrue(), targetPredicate, swappedOption, enabled, true));
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.
@@ -398,6 +638,42 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		return false;
+	}
+
+	private boolean swap(MenuAction menuAction, String target, int index)
+	{
+		MenuEntry[] menuEntries = client.getMenuEntries();
+
+		// find option to swap with
+		int optionIdx = findIndex(menuEntries, index, menuAction, target);
+
+		if (optionIdx >= 0)
+		{
+			swap(optionIndexes, menuEntries, optionIdx, index);
+			return true;
+		}
+
+		return false;
+	}
+
+	private int findIndex(MenuEntry[] entries, int limit, MenuAction menuAction, String target)
+	{
+		// We want the last index which matches the target, as that is what is top-most
+		// on the menu
+		for (int i = limit - 1; i >= 0; --i)
+		{
+			MenuEntry entry = entries[i];
+
+			if (entry.getType() != menuAction) continue;
+
+			String entryTarget = Text.removeTags(entry.getTarget()).toLowerCase();
+			if (entryTarget.equals(target))
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.

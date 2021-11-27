@@ -1,5 +1,6 @@
 package com.hotkeyablemenuswaps;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.client.config.Config;
@@ -281,9 +282,167 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	}
 
 	@ConfigSection(
+		name = "Jewellery box",
+		description = "The jewellery box in a player owned house.",
+		position = 3
+	)
+	String jewelleryBoxSection = "jewelleryBox";
+
+	@ConfigItem(
+		keyName = "swapJewelleryBoxHotkey",
+		name = "Swap Jewellery Box",
+		description = "swap the second with the first menu option on the Jewellery Box. Left-click swaps can be changed in the default Menu Entry Swapper.",
+		section = jewelleryBoxSection,
+		position = 0
+	)
+	default Keybind getSwapJewelleryBoxHotkey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigSection(
+		name = "Portal Nexus",
+		description = "Things in the player owned house portal nexus.",
+		position = 4
+	)
+	String portalNexusSection = "portalNexus";
+
+	@ConfigItem(
+		keyName = "portalNexusDestinationSwapHotKey",
+		name = "Nexus Destination",
+		description = "The configured default destination",
+		section = portalNexusSection,
+		position = 0
+	)
+	default Keybind portalNexusDestinationSwapHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "portalNexusTeleportMenuSwapHotKey",
+		name = "Nexus Teleport Menu",
+		description = "",
+		section = portalNexusSection,
+		position = 1
+	)
+	default Keybind portalNexusTeleportMenuSwapHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "portalNexusConfigurationSwapHotKey",
+		name = "Nexus Configuration",
+		description = "The option named \"Configuration\"",
+		section = portalNexusSection,
+		position = 2
+	)
+	default Keybind portalNexusConfigurationSwapHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohXericsTalismanLeftClick",
+		name = "Xeric's Left Click",
+		description = "",
+		section = portalNexusSection,
+		position = 3
+	)
+	default HotkeyableMenuSwapsPlugin.PortalNexusXericsTalismanSwap pohXericsTalismanLeftClick()
+	{
+		return HotkeyableMenuSwapsPlugin.PortalNexusXericsTalismanSwap.DESTINATION;
+	}
+
+	@ConfigItem(
+		keyName = "pohXericsTalismanDestination",
+		name = "Xeric's Destination",
+		description = "The configured default destination",
+		section = portalNexusSection,
+		position = 4
+	)
+	default Keybind pohXericsTalismanDestination()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohXericsTalismanTeleportMenu",
+		name = "Xeric's Teleport Menu",
+		description = "",
+		section = portalNexusSection,
+		position = 5
+	)
+	default Keybind pohXericsTalismanTeleportMenu()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohXericsTalismanConfiguration",
+		name = "Xeric's Configuration",
+		description = "The option named \"Configuration\"",
+		section = portalNexusSection,
+		position = 6
+	)
+	default Keybind pohXericsTalismanConfiguration()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohDigsitePendantLeftClick",
+		name = "Digsite Left Click",
+		description = "",
+		section = portalNexusSection,
+		position = 7
+	)
+	default HotkeyableMenuSwapsPlugin.PortalNexusDigsitePendantSwap pohDigsitePendantLeftClick()
+	{
+		return HotkeyableMenuSwapsPlugin.PortalNexusDigsitePendantSwap.DESTINATION;
+	}
+
+	@ConfigItem(
+		keyName = "pohDigsitePendantDestination",
+		name = "Digsite Destination",
+		description = "The configured default destination",
+		section = portalNexusSection,
+		position = 8
+	)
+	default Keybind pohDigsitePendantDestination()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohDigsitePendantTeleportMenu",
+		name = "Digsite Teleport Menu",
+		description = "",
+		section = portalNexusSection,
+		position = 9
+	)
+	default Keybind pohDigsitePendantTeleportMenu()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "pohDigsitePendantConfiguration",
+		name = "Digsite Configuration",
+		description = "The option named \"Configuration\"",
+		section = portalNexusSection,
+		position = 10
+	)
+	default Keybind pohDigsitePendantConfiguration()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigSection(
 			name = "Inventory",
 			description = "Inventory menu entry swaps",
-			position = 3
+			position = 5
 	)
 	String inventorySection = "inventory";
 
@@ -299,4 +458,35 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return Keybind.NOT_SET;
 	}
 
+//	@ConfigSection(
+//		name = "Other",
+//		description = "Other swaps",
+//		position = 4
+//	)
+//	String otherSection = "other";
+//
+//	@ConfigItem(
+//		keyName = "swapJewelleryBoxHotkey",
+//		name = "Swap Jewellery Box",
+//		description = "swap the second with the first menu option on the Jewellery Box",
+//		section = otherSection,
+//		position = 0
+//	)
+//	default Keybind getSwapJewelleryBoxHotkey()
+//	{
+//		return Keybind.NOT_SET;
+//	}
+//
+//	@ConfigItem(
+//		keyName = "swapPortalNexusHotkey",
+//		name = "Swap Portal Nexus",
+//		description = "swap the second with the first menu option on the Portal Nexus",
+//		section = otherSection,
+//		position = 1
+//	)
+//	default Keybind getSwapPortalNexusHotkey()
+//	{
+//		return Keybind.NOT_SET;
+//	}
+//
 }
