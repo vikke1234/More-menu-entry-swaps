@@ -249,8 +249,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			final int opId = isDepositBoxPlayerInventory ? currentBankModeSwap.getDepositIdentifierDepositBox()
 					: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
 					: currentBankModeSwap.getDepositIdentifier();
-			final int actionId = opId >= 6 ? MenuAction.CC_OP_LOW_PRIORITY.getId() : MenuAction.CC_OP.getId();
-			bankModeSwap(actionId, opId);
+			final MenuAction action = opId >= 6 ? MenuAction.CC_OP_LOW_PRIORITY : MenuAction.CC_OP;
+			bankModeSwap(action, opId);
 		}
 
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x
@@ -258,16 +258,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				&& menuEntryAdded.getType() == MenuAction.CC_OP.getId() && menuEntryAdded.getIdentifier() == 1
 				&& menuEntryAdded.getOption().startsWith("Withdraw")) {
 			boolean isChambersStorageUnit = widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE_GROUP_ID || widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED_GROUP_ID;
-			final int actionId = isChambersStorageUnit ? MenuAction.CC_OP.getId()
-					: currentBankModeSwap.getWithdrawMenuAction().getId();
+			final MenuAction action = isChambersStorageUnit ? MenuAction.CC_OP
+					: currentBankModeSwap.getWithdrawMenuAction();
 			final int opId = isChambersStorageUnit ? currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit()
 					: currentBankModeSwap.getWithdrawIdentifier();
-			bankModeSwap(actionId, opId);
+			bankModeSwap(action, opId);
 		}
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.
-	private void bankModeSwap(int entryTypeId, int entryIdentifier)
+	private void bankModeSwap(MenuAction entryType, int entryIdentifier)
 	{
 		MenuEntry[] menuEntries = client.getMenuEntries();
 
@@ -275,10 +275,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		{
 			MenuEntry entry = menuEntries[i];
 
-			if (entry.getType() == entryTypeId && entry.getIdentifier() == entryIdentifier)
+			if (entry.getType() == entryType && entry.getIdentifier() == entryIdentifier)
 			{
 				// Raise the priority of the op so it doesn't get sorted later
-				entry.setType(MenuAction.CC_OP.getId());
+				entry.setType(MenuAction.CC_OP);
 
 				menuEntries[i] = menuEntries[menuEntries.length - 1];
 				menuEntries[menuEntries.length - 1] = entry;
@@ -350,7 +350,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			}
 		}
 
-		MenuAction menuAction = MenuAction.of(menuEntry.getType());
+		MenuAction menuAction = menuEntry.getType();
 		if (menuAction == MenuAction.ITEM_FIRST_OPTION
 				|| menuAction == MenuAction.ITEM_SECOND_OPTION
 				|| menuAction == MenuAction.ITEM_THIRD_OPTION
