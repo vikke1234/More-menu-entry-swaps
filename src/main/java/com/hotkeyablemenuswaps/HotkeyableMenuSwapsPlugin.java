@@ -520,12 +520,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String target = Text.removeTags(menuEntry.getTarget()).toLowerCase();
 
 		MenuAction menuAction = menuEntry.getType();
-		if (menuAction == MenuAction.ITEM_FIRST_OPTION
-				|| menuAction == MenuAction.ITEM_SECOND_OPTION
-				|| menuAction == MenuAction.ITEM_THIRD_OPTION
-				|| menuAction == MenuAction.ITEM_FOURTH_OPTION
-				|| menuAction == MenuAction.ITEM_FIFTH_OPTION
-				|| menuAction == MenuAction.ITEM_USE)
+		if (menuAction == MenuAction.WIDGET_TARGET)
 		{
 			if (swapUse && option.equals("use"))
 			{
