@@ -1,6 +1,5 @@
 package com.hotkeyablemenuswaps;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.client.config.Config;
@@ -14,11 +13,63 @@ import static com.hotkeyablemenuswaps.OccultAltarSwap.*;
 @ConfigGroup("hotkeyablemenuswaps")
 public interface HotkeyableMenuSwapsConfig extends Config
 {
-	@ConfigSection(
-			name = "Bank",
-			description = "All options that swap entries in the bank",
-			position = 0
+	@ConfigSection(name = "Custom Swaps", description = "Text-based custom swaps", position = -10)
+	String customSwapsSection = "Custom Swaps";
+
+	@ConfigItem(
+		keyName = "customSwaps",
+		name = "Custom swaps",
+		description = "Options to swap to the top.",
+		section = customSwapsSection,
+		position = 0
 	)
+	default String customSwaps() {
+		return "";
+	}
+
+	@ConfigSection(name = "Custom Swaps (shift)", description = "Text-based custom swaps", position = -10)
+	String customShiftSwapsSection = "Custom Swaps (shift)";
+
+	@ConfigItem(
+		keyName = "customShiftSwaps",
+		name = "Custom swaps (shift)",
+		description = "Options to swap to the top when shift is held.",
+		section = customShiftSwapsSection,
+		position = 0
+	)
+	default String customShiftSwaps() {
+		return "";
+	}
+
+	@ConfigSection(name = "Custom Hides", description = "Text-based custom menu entry hides", position = -9)
+	String customHidesSection = "Custom Hides";
+
+	@ConfigItem(
+		keyName = "customHides",
+		name = "Custom hides",
+		description = "Options to swap to the top.",
+		section = customHidesSection,
+		position = 1
+	)
+	default String customHides() {
+		return "";
+	}
+
+	@ConfigSection(name = "Custom swap instructions", description = "instructions", position = -7)
+	String customSwapInstructions = "Custom swap instructions";
+
+	@ConfigItem(
+		keyName = "customSwapperInstructions",
+		name = "Instructions",
+		description = "Options to swap to the top.",
+		section = customSwapInstructions,
+		position = 2
+	)
+	default String customSwapperInstructions() {
+		return "### Basic use:\nAdd swaps, one per line. Format is \"option,target\". Supports wildcards (\"*\"). You can also swap a menu entry only when the top entry matches some text, by using the format \"option,target,topOption,topTarget\".\nExamples:\npick-lock,trapdoor\nclear,*bush\nuse,cannonball -> dwarf*\ntake,small fishing net,set-trap,young tree\n\n### Hiding:\nYou can hide menu entries with the same syntax, described above.\n\n### Limitations:\nSome menu entries won't be swapped per jagex's rules (player menu entries, spell casts, blackjacking and construction). This includes swapping that entry up, as well as swapping anything while one of these entries is already the left-click entry, as well as hiding entries above construction or blackjack entries.\n";
+	}
+
+	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0)
 	String bankSection = "bank";
 
 	@ConfigItem(

@@ -33,29 +33,39 @@ import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.Value;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
-import static net.runelite.api.MenuAction.WIDGET_TARGET;
+import static net.runelite.api.MenuAction.*;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
+import static net.runelite.api.widgets.WidgetID.SPELLBOOK_GROUP_ID;
 import net.runelite.api.widgets.WidgetInfo;
+import static net.runelite.api.widgets.WidgetInfo.TO_GROUP;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -64,6 +74,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperConfig;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperPlugin;
 import net.runelite.client.util.Text;
+import net.runelite.client.util.WildcardMatcher;
 
 // TODO when you press a key, then press and release a different key, the original key is no longer used for the keybind.
 // Also, modifier keys cannot be activated if they are pressed when the client does not have focus, which is annoying.
@@ -71,8 +82,8 @@ import net.runelite.client.util.Text;
 // wont-fix - when using shift as a hotkey it prevents some other hotkeys (e.g. lowercase "t") from being activated while shift is down.
 
 @PluginDescriptor(
-	name = "Hotkeyable Menu Swaps",
-	tags = {"entry", "swapper"}
+	name = "Custom Menu Swaps",
+	tags = {"entry", "swapper", "custom", "text"}
 )
 @PluginDependency(MenuEntrySwapperPlugin.class)
 public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
@@ -103,6 +114,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private volatile PortalNexusXericsTalismanSwap swapPortalNexusXericsTalisman;
 	private volatile PortalNexusDigsitePendantSwap swapPortalNexusDigsitePendant;
 
+	final List<CustomSwap> customSwaps = new ArrayList<>();
+	final List<CustomSwap> customShiftSwaps = new ArrayList<>();
+	final List<CustomSwap> customHides = new ArrayList<>();
+
 	@Provides
 	HotkeyableMenuSwapsConfig provideConfig(ConfigManager configManager)
 	{
@@ -111,6 +126,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Override
 	protected void startUp() {
+		reloadCustomSwaps();
+
 		resetHotkeys();
 
 		keyManager.registerKeyListener(this);
@@ -499,6 +516,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			return;
 		}
 
+		customSwaps();
+
 		MenuEntry[] menuEntries = client.getMenuEntries();
 
 		// Build option map for quick lookup in findIndex
@@ -775,5 +794,233 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private void swapContains(String option, Predicate<String> targetPredicate, String swappedOption, Supplier<Boolean> enabled)
 	{
 		swaps.put(option, new Swap(alwaysTrue(), targetPredicate, swappedOption, enabled, false));
+	}
+
+	@Getter
+	@ToString
+	@RequiredArgsConstructor
+	@EqualsAndHashCode
+	static class CustomSwap
+	{
+		private final String option;
+		private final String target;
+		private final String topOption;
+		private final String topTarget;
+
+		CustomSwap(String option, String target)
+		{
+			this(option, target, null, null);
+		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged configChanged) {
+		if (configChanged.getGroup().equals("hotkeyablemenuswaps")) {
+			reloadCustomSwaps();
+		}
+	}
+
+	private void reloadCustomSwaps()
+	{
+		customSwaps.clear();
+		customSwaps.addAll(loadCustomSwaps(config.customSwaps()));
+
+		customShiftSwaps.clear();
+		customShiftSwaps.addAll(loadCustomSwaps(config.customShiftSwaps()));
+
+		customHides.clear();
+		customHides.addAll(loadCustomSwaps(config.customHides()));
+	}
+
+	private Collection<? extends CustomSwap> loadCustomSwaps(String customSwaps)
+	{
+		List<CustomSwap> swaps = new ArrayList<>();
+		for (String customSwap : customSwaps.split("\n"))
+		{
+			if (customSwap.trim().equals("")) continue;
+			String[] split = customSwap.split(",");
+			swaps.add(new CustomSwap(
+				split[0].toLowerCase().trim(),
+				split.length > 1 ? split[1].toLowerCase().trim() : "",
+				split.length > 2 ? split[2].toLowerCase().trim() : null,
+				split.length > 3 ? split[3].toLowerCase().trim() : null
+			));
+		}
+		return swaps;
+	}
+
+	private boolean shiftModifier()
+	{
+		return client.isKeyPressed(KeyCode.KC_SHIFT);
+	}
+
+	public void customSwaps()
+	{
+		MenuEntry[] menuEntries = client.getMenuEntries();
+		if (menuEntries.length == 0) return;
+
+		menuEntries = filterEntries(menuEntries);
+		int topEntryIndex = getTopMenuEntryIndex(menuEntries);
+		MenuEntry topEntry = menuEntries[topEntryIndex];
+		if (mayNotBeLeftClick(topEntry)) {
+			return;
+		}
+
+		int entryIndex = getEntryIndexToSwap(menuEntries, shiftModifier() ? customShiftSwaps : customSwaps);
+		if (entryIndex >= 0)
+		{
+			MenuEntry entryToSwap = menuEntries[entryIndex];
+			if (isProtected(topEntry) || isProtected(entryToSwap)) {
+				return;
+			}
+
+			// the client will open the right-click menu on left-click if the entry at the top is a CC_OP_LOW_PRIORITY.
+			if (entryToSwap.getType() == MenuAction.CC_OP_LOW_PRIORITY)
+			{
+				entryToSwap.setType(MenuAction.CC_OP);
+			}
+			// The client will sort all menu entries with id >1000 below those with id <1000 so deprioritize (add 2000)
+			// any menu entries that will show up above ours. This is needed for things like ham hideout trapdoor
+			// pick-lock and bush clear.
+			else if (entryToSwap.getType().getId() > 1000)
+			{
+				int swappedEntryId = entryToSwap.getType().getId();
+				for (MenuEntry menuEntry : menuEntries)
+				{
+					int entryId = menuEntry.getType().getId();
+					if (entryId < swappedEntryId && !isProtected(menuEntry))
+					{
+						menuEntry.setDeprioritized(true);
+					}
+				}
+			}
+
+			if (topEntryIndex > entryIndex) // This might not be the case if you swap examine sometimes, because examine is actually above other options for some reason, sometimes. This means that the top entry will actually be below the entry you want swapped, because the top entry takes into account the client's sorting >1000 id options down.
+			{
+				menuEntries[topEntryIndex] = entryToSwap;
+				menuEntries[entryIndex] = topEntry;
+			}
+		}
+
+		client.setMenuEntries(menuEntries);
+	}
+
+	/**
+	 * Takes into account the client's sorting of >1000 id menu options.
+	 */
+	private int getTopMenuEntryIndex(MenuEntry[] menuEntries)
+	{
+		for (int i = menuEntries.length - 1; i >= 0; i--)
+		{
+			if (menuEntries[i].getType().getId() < 1000 && !menuEntries[i].isDeprioritized()) {
+				return i;
+			}
+		}
+		return menuEntries.length - 1;
+	}
+
+	private int getEntryIndexToSwap(MenuEntry[] menuEntries, List<CustomSwap> swaps)
+	{
+		int entryIndex = -1;
+		int latestMatchingSwapIndex = -1;
+		// prefer to swap menu entries that are already at the top of the list.
+		for (int i = menuEntries.length - 1; i >= 0; i--)
+		{
+			MenuEntry entry = menuEntries[i];
+
+			String option = Text.standardize(entry.getOption());
+			String target = Text.standardize(entry.getTarget());
+			int swapIndex = matches(option, target, menuEntries, swaps);
+			if (swapIndex > latestMatchingSwapIndex)
+			{
+				entryIndex = i;
+				latestMatchingSwapIndex = swapIndex;
+			}
+		}
+		return entryIndex;
+	}
+
+	private boolean isProtected(MenuEntry entry)
+	{
+		MenuAction type = entry.getType();
+		if (type.getId() >= PLAYER_FIRST_OPTION.getId() && type.getId() <= PLAYER_EIGTH_OPTION.getId()) {
+			return true;
+		}
+		if (type == WIDGET_TARGET_ON_PLAYER || type == WIDGET_TARGET_ON_NPC) {
+			if (TO_GROUP(client.getSelectedWidget().getId()) == SPELLBOOK_GROUP_ID) {
+				return true;
+			}
+		}
+		if (mayNotBeLeftClick(entry)) {
+			return true;
+		}
+		return false;
+	}
+
+	private boolean mayNotBeLeftClick(MenuEntry entry)
+	{
+		MenuAction type = entry.getType();
+		if (type == MenuAction.NPC_FOURTH_OPTION || type == MenuAction.NPC_FIFTH_OPTION) {
+			if (entry.getNpc() != null) {
+				String[] actions = entry.getNpc().getTransformedComposition().getActions();
+				if (actions[3].equals("Lure") || actions[4].equals("Knock-out")) {
+					return true;
+				}
+			}
+		}
+		if (type == GAME_OBJECT_FIFTH_OPTION) {
+			return client.getVarbitValue(2176) == 1; // in building mode.
+		}
+		return false;
+	}
+
+	private MenuEntry[] filterEntries(MenuEntry[] menuEntries)
+	{
+		ArrayList<MenuEntry> filtered = new ArrayList<>();
+		for (MenuEntry entry : menuEntries)
+		{
+			String option = Text.standardize(Text.removeTags(entry.getOption()));
+			String target = Text.standardize(Text.removeTags(entry.getTarget()));
+			if (matches(option, target, menuEntries, customHides) == -1 || isProtected(entry))
+			{
+				filtered.add(entry);
+			}
+		}
+		return filtered.toArray(new MenuEntry[0]);
+	}
+
+	private int matches(String entryOption, String entryTarget, MenuEntry[] entries, List<CustomSwap> swaps)
+	{
+		int topEntryIndex = getTopMenuEntryIndex(entries);
+		MenuEntry topEntry = entries[topEntryIndex];
+		String target = Text.standardize(topEntry.getTarget());
+		String option = Text.standardize(topEntry.getOption());
+		for (int i = 0; i < swaps.size(); i++)
+		{
+			CustomSwap _configEntry = swaps.get(i);
+			if (
+				(
+					_configEntry.option.equals(entryOption)
+						|| WildcardMatcher.matches(_configEntry.option, entryOption)
+				)
+					&& (
+					_configEntry.target.equals(entryTarget)
+						|| WildcardMatcher.matches(_configEntry.target, entryTarget)
+				)
+			)
+			{
+				boolean a = (_configEntry.topOption == null);
+				boolean b = (_configEntry.topTarget == null);
+				Supplier<Boolean> c = () -> (_configEntry.topOption.equals(option) || WildcardMatcher
+					.matches(_configEntry.topOption, option));
+				Supplier<Boolean> d = () -> (_configEntry.topTarget.equals(target) || WildcardMatcher
+					.matches(_configEntry.topTarget, target));
+				if (a || b || (c.get() && d.get()))
+				{
+					return i;
+				}
+			}
+		}
+		return -1;
 	}
 }
