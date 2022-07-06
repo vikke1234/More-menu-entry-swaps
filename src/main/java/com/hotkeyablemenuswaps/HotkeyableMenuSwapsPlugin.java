@@ -45,10 +45,10 @@ import lombok.Value;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MenuAction;
+import static net.runelite.api.MenuAction.WIDGET_TARGET;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.FocusChanged;
-import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
@@ -408,36 +408,57 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
-	@Subscribe(priority = -1)
-	public void onMenuEntryAdded(MenuEntryAdded menuEntryAdded) {
-		final int widgetGroupId = WidgetInfo.TO_GROUP(menuEntryAdded.getActionParam1());
+	private boolean swapBank(MenuEntry menuEntry, MenuAction type)
+	{
+		if (type != MenuAction.CC_OP && type != MenuAction.CC_OP_LOW_PRIORITY)
+		{
+			return false;
+		}
 
+		final int widgetGroupId = WidgetInfo.TO_GROUP(menuEntry.getParam1());
 		final boolean isDepositBoxPlayerInventory = widgetGroupId == WidgetID.DEPOSIT_BOX_GROUP_ID;
 		final boolean isChambersOfXericStorageUnitPlayerInventory = widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_INVENTORY_GROUP_ID;
+		final boolean isGroupStoragePlayerInventory = widgetGroupId == WidgetID.GROUP_STORAGE_INVENTORY_GROUP_ID;
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x for deposit box interface and chambers of xeric storage unit.
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
-		if (currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_ALL_BUT_1
-				&& menuEntryAdded.getType() == MenuAction.CC_OP.getId()
-				&& menuEntryAdded.getIdentifier() == (isDepositBoxPlayerInventory || isChambersOfXericStorageUnitPlayerInventory ? 1 : 2)
-				&& (menuEntryAdded.getOption().startsWith("Deposit-") || menuEntryAdded.getOption().startsWith("Store") || menuEntryAdded.getOption().startsWith("Donate"))) {
+		if (
+			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_ALL_BUT_1
+			&& type == MenuAction.CC_OP
+			&& menuEntry.getIdentifier() == (isDepositBoxPlayerInventory || isGroupStoragePlayerInventory || isChambersOfXericStorageUnitPlayerInventory ? 1 : 2)
+			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate"))
+		) {
 			final int opId = isDepositBoxPlayerInventory ? currentBankModeSwap.getDepositIdentifierDepositBox()
-					: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
-					: currentBankModeSwap.getDepositIdentifier();
+				: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
+				: isGroupStoragePlayerInventory ? currentBankModeSwap.getDepositIdentifierGroupStorage()
+				: currentBankModeSwap.getDepositIdentifier();
 			final MenuAction action = opId >= 6 ? MenuAction.CC_OP_LOW_PRIORITY : MenuAction.CC_OP;
 			bankModeSwap(action, opId);
+			return true;
 		}
 
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x
-		if (currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_EXTRA_OP
-				&& menuEntryAdded.getType() == MenuAction.CC_OP.getId() && menuEntryAdded.getIdentifier() == 1
-				&& menuEntryAdded.getOption().startsWith("Withdraw")) {
-			boolean isChambersStorageUnit = widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE_GROUP_ID || widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED_GROUP_ID;
-			final MenuAction action = isChambersStorageUnit ? MenuAction.CC_OP
-					: currentBankModeSwap.getWithdrawMenuAction();
-			final int opId = isChambersStorageUnit ? currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit()
-					: currentBankModeSwap.getWithdrawIdentifier();
+		if (
+			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_EXTRA_OP
+			&& type == MenuAction.CC_OP && menuEntry.getIdentifier() == 1
+			&& menuEntry.getOption().startsWith("Withdraw")
+		) {
+			final MenuAction action;
+			final int opId;
+			if (widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE_GROUP_ID || widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED_GROUP_ID)
+			{
+				action = MenuAction.CC_OP;
+				opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
+			}
+			else
+			{
+				action = currentBankModeSwap.getWithdrawMenuAction();
+				opId = currentBankModeSwap.getWithdrawIdentifier();
+			}
 			bankModeSwap(action, opId);
+			return true;
 		}
+
+		return false;
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.
@@ -515,12 +536,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private void swapMenuEntry(MenuEntry[] menuEntries, int index)
 	{
 		MenuEntry menuEntry = menuEntries[index];
-
 		String option = Text.removeTags(menuEntry.getOption()).toLowerCase();
 		String target = Text.removeTags(menuEntry.getTarget()).toLowerCase();
-
 		MenuAction menuAction = menuEntry.getType();
-		if (menuAction == MenuAction.WIDGET_TARGET)
+
+		if (swapBank(menuEntry, menuAction))
+		{
+			return;
+		}
+
+		if (menuAction == WIDGET_TARGET)
 		{
 			if (swapUse && option.equals("use"))
 			{

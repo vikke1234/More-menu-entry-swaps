@@ -17,17 +17,18 @@ enum BankSwapMode {
     SWAP_5(ShiftDepositMode.DEPOSIT_5, ShiftWithdrawMode.WITHDRAW_5, HotkeyableMenuSwapsConfig::getBankSwap5Hotkey),
     SWAP_10(ShiftDepositMode.DEPOSIT_10, ShiftWithdrawMode.WITHDRAW_10, HotkeyableMenuSwapsConfig::getBankSwap10Hotkey),
     SWAP_X(ShiftDepositMode.DEPOSIT_X, ShiftWithdrawMode.WITHDRAW_X, HotkeyableMenuSwapsConfig::getBankSwapXHotkey),
-    SWAP_SET_X(7, 6, 5, MenuAction.CC_OP_LOW_PRIORITY, 6, 5, HotkeyableMenuSwapsConfig::getBankSwapSetXHotkey),
+    SWAP_SET_X(7, 6, 5, 6 /* TODO is this correct? */, MenuAction.CC_OP_LOW_PRIORITY, 6, 5, HotkeyableMenuSwapsConfig::getBankSwapSetXHotkey),
     SWAP_ALL(ShiftDepositMode.DEPOSIT_ALL, ShiftWithdrawMode.WITHDRAW_ALL, HotkeyableMenuSwapsConfig::getBankSwapAllHotkey),
-    SWAP_ALL_BUT_1(-1, -1, -1, ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getMenuAction(), ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getIdentifier(), ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getIdentifierChambersStorageUnit(), HotkeyableMenuSwapsConfig::getBankSwapAllBut1Hotkey),
-    SWAP_EXTRA_OP(ShiftDepositMode.EXTRA_OP.getIdentifier(), ShiftDepositMode.EXTRA_OP.getIdentifierDepositBox(), ShiftDepositMode.EXTRA_OP.getIdentifierChambersStorageUnit(), null, -1, -1, HotkeyableMenuSwapsConfig::getBankSwapExtraOpHotkey),
+    SWAP_ALL_BUT_1(-1, -1, -1, -1, ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getMenuAction(), ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getIdentifier(), ShiftWithdrawMode.WITHDRAW_ALL_BUT_1.getIdentifierChambersStorageUnit(), HotkeyableMenuSwapsConfig::getBankSwapAllBut1Hotkey),
+    SWAP_EXTRA_OP(ShiftDepositMode.EXTRA_OP.getIdentifier(), ShiftDepositMode.EXTRA_OP.getIdentifierDepositBox(), ShiftDepositMode.EXTRA_OP.getIdentifierChambersStorageUnit(), ShiftDepositMode.EXTRA_OP.getIdentifierGroupStorage(), null, -1, -1, HotkeyableMenuSwapsConfig::getBankSwapExtraOpHotkey),
     ;
 
     private final int depositIdentifier;
     private final int depositIdentifierDepositBox;
     private final int depositIdentifierChambersStorageUnit;
+	private final int depositIdentifierGroupStorage;
 
-    private final MenuAction withdrawMenuAction;
+	private final MenuAction withdrawMenuAction;
     private final int withdrawIdentifier;
     private final int withdrawIdentifierChambersStorageUnit;
 
@@ -37,6 +38,7 @@ enum BankSwapMode {
         depositIdentifier = depositMode.getIdentifier();
         depositIdentifierDepositBox = depositMode.getIdentifierDepositBox();
         depositIdentifierChambersStorageUnit = depositMode.getIdentifierChambersStorageUnit();
+        depositIdentifierGroupStorage = depositMode.getIdentifierGroupStorage();
         withdrawMenuAction = withdrawMode.getMenuAction();
         withdrawIdentifier = withdrawMode.getIdentifier();
         withdrawIdentifierChambersStorageUnit = withdrawMode.getIdentifierChambersStorageUnit();
