@@ -861,6 +861,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		menuEntries = filterEntries(menuEntries);
 		int topEntryIndex = getTopMenuEntryIndex(menuEntries);
+		if (topEntryIndex == -1) {
+			client.setMenuEntries(menuEntries);
+			return;
+		}
 		MenuEntry topEntry = menuEntries[topEntryIndex];
 		if (mayNotBeLeftClick(topEntry)) {
 			return;
@@ -943,9 +947,6 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private boolean isProtected(MenuEntry entry)
 	{
 		MenuAction type = entry.getType();
-		if (type.getId() >= PLAYER_FIRST_OPTION.getId() && type.getId() <= PLAYER_EIGTH_OPTION.getId()) {
-			return true;
-		}
 		if (type == WIDGET_TARGET_ON_PLAYER || type == WIDGET_TARGET_ON_NPC) {
 			if (TO_GROUP(client.getSelectedWidget().getId()) == SPELLBOOK_GROUP_ID) {
 				return true;
@@ -960,10 +961,13 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private boolean mayNotBeLeftClick(MenuEntry entry)
 	{
 		MenuAction type = entry.getType();
+		if (type.getId() >= PLAYER_FIRST_OPTION.getId() && type.getId() <= PLAYER_EIGTH_OPTION.getId()) {
+			return true;
+		}
 		if (type == MenuAction.NPC_FOURTH_OPTION || type == MenuAction.NPC_FIFTH_OPTION) {
 			if (entry.getNpc() != null) {
 				String[] actions = entry.getNpc().getTransformedComposition().getActions();
-				if (actions[3].equals("Lure") || actions[4].equals("Knock-out")) {
+				if ("Lure".equals(actions[3]) || "Knock-out".equals(actions[4])) {
 					return true;
 				}
 			}
