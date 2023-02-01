@@ -34,14 +34,12 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -49,13 +47,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
 import net.runelite.api.Client;
-import net.runelite.api.GameState;
 import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
 import static net.runelite.api.MenuAction.*;
 import net.runelite.api.MenuEntry;
-import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.FocusChanged;
+import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
 import static net.runelite.api.widgets.WidgetID.SPELLBOOK_GROUP_ID;
@@ -507,15 +504,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
 	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with this plugin.
-	public void onClientTick(ClientTick clientTick)
+	public void onPostMenuSort(PostMenuSort e)
 	{
-		// The menu is not rebuilt when it is open, so don't swap or else it will
-		// repeatedly swap entries
-		if (client.getGameState() != GameState.LOGGED_IN || client.isMenuOpen())
-		{
-			return;
-		}
-
 		customSwaps();
 
 		MenuEntry[] menuEntries = client.getMenuEntries();
@@ -860,8 +850,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (menuEntries.length == 0) return;
 
 		menuEntries = filterEntries(menuEntries);
-		int topEntryIndex = getTopMenuEntryIndex(menuEntries);
-		if (topEntryIndex == -1) {
+		int topEntryIndex = menuEntries.length - 1;
+		if (topEntryIndex == -1) { // The filtering removed all the menu options. No swaps can happen, so return early.
 			client.setMenuEntries(menuEntries);
 			return;
 		}
@@ -883,21 +873,6 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			{
 				entryToSwap.setType(MenuAction.CC_OP);
 			}
-			// The client will sort all menu entries with id >1000 below those with id <1000 so deprioritize (add 2000)
-			// any menu entries that will show up above ours. This is needed for things like ham hideout trapdoor
-			// pick-lock and bush clear.
-			else if (entryToSwap.getType().getId() > 1000)
-			{
-				int swappedEntryId = entryToSwap.getType().getId();
-				for (MenuEntry menuEntry : menuEntries)
-				{
-					int entryId = menuEntry.getType().getId();
-					if (entryId < swappedEntryId && !isProtected(menuEntry))
-					{
-						menuEntry.setDeprioritized(true);
-					}
-				}
-			}
 
 			if (topEntryIndex > entryIndex) // This might not be the case if you swap examine sometimes, because examine is actually above other options for some reason, sometimes. This means that the top entry will actually be below the entry you want swapped, because the top entry takes into account the client's sorting >1000 id options down.
 			{
@@ -909,25 +884,11 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		client.setMenuEntries(menuEntries);
 	}
 
-	/**
-	 * Takes into account the client's sorting of >1000 id menu options.
-	 */
-	private int getTopMenuEntryIndex(MenuEntry[] menuEntries)
-	{
-		for (int i = menuEntries.length - 1; i >= 0; i--)
-		{
-			if (menuEntries[i].getType().getId() < 1000 && !menuEntries[i].isDeprioritized()) {
-				return i;
-			}
-		}
-		return menuEntries.length - 1;
-	}
-
 	private int getEntryIndexToSwap(MenuEntry[] menuEntries, List<CustomSwap> swaps)
 	{
 		int entryIndex = -1;
 		int latestMatchingSwapIndex = -1;
-		// prefer to swap menu entries that are already at the top of the list.
+		// prefer to swap menu entries that are already at or near the top of the list.
 		for (int i = menuEntries.length - 1; i >= 0; i--)
 		{
 			MenuEntry entry = menuEntries[i];
@@ -980,7 +941,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	private MenuEntry[] filterEntries(MenuEntry[] menuEntries)
 	{
-		ArrayList<MenuEntry> filtered = new ArrayList<>();
+		List<MenuEntry> filtered = new ArrayList<>();
 		for (MenuEntry entry : menuEntries)
 		{
 			String option = Text.standardize(Text.removeTags(entry.getOption()));
@@ -995,8 +956,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	private int matches(String entryOption, String entryTarget, MenuEntry[] entries, List<CustomSwap> swaps)
 	{
-		int topEntryIndex = getTopMenuEntryIndex(entries);
-		MenuEntry topEntry = entries[topEntryIndex];
+		MenuEntry topEntry = entries[entries.length - 1];
 		String target = Text.standardize(topEntry.getTarget());
 		String option = Text.standardize(topEntry.getOption());
 		for (int i = 0; i < swaps.size(); i++)
