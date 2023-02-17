@@ -55,7 +55,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "";
 	}
 
-	@ConfigSection(name = "Custom swap instructions", description = "instructions", position = -7)
+	@ConfigSection(name = "Custom swap instructions", description = "instructions", position = -7, closedByDefault = true)
 	String customSwapInstructions = "Custom swap instructions";
 
 	@ConfigItem(
