@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -71,7 +73,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperConfig;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperPlugin;
 import net.runelite.client.util.Text;
-import net.runelite.client.util.WildcardMatcher;
 
 // TODO when you press a key, then press and release a different key, the original key is no longer used for the keybind.
 // Also, modifier keys cannot be activated if they are pressed when the client does not have focus, which is annoying.
@@ -797,9 +798,134 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		private final String topOption;
 		private final String topTarget;
 
+		private final Type optionType;
+		private final Type targetType;
+		private final Type topOptionType;
+		private final Type topTargetType;
+
+		private enum Type {
+			EQUALS,
+			STARTS_WITH,
+			ENDS_WITH,
+			CONTAINS,
+			WILDCARD,
+			IGNORE
+		}
+
+		public static CustomSwap fromString(String s)
+		{
+			String[] split = s.split(",");
+			return new CustomSwap(
+				split[0].toLowerCase().trim(),
+				split.length > 1 ? split[1].toLowerCase().trim() : "",
+				split.length > 2 ? split[2].toLowerCase().trim() : null,
+				split.length > 3 ? split[3].toLowerCase().trim() : null
+			);
+		}
+
 		CustomSwap(String option, String target)
 		{
 			this(option, target, null, null);
+		}
+
+		CustomSwap(String option, String target, String topOption, String topTarget)
+		{
+			this.optionType = getType(option);
+			this.option = prepareMatch(option, optionType);
+			this.targetType = getType(target);
+			this.target = prepareMatch(target, targetType);
+			this.topOptionType = getType(topOption);
+			this.topOption = prepareMatch(topOption, topOptionType);
+			this.topTargetType = getType(topTarget);
+			this.topTarget = prepareMatch(topTarget, topTargetType);
+//			System.out.println("types for " + option + " " + target + " "+ topOption + " " + topTarget + " " + optionType + " " + targetType + " " + topOptionType + " " + topTargetType);
+		}
+
+		private static Type getType(String s)
+		{
+			if (s == null) return Type.IGNORE;
+
+			int star = s.indexOf('*');
+			if (star == -1) return Type.EQUALS;
+			if (star == 0) {
+				if (s.length() == 1) return Type.IGNORE;
+				star = s.indexOf('*', star + 1);
+				if (star == -1) return Type.ENDS_WITH;
+				if (star == s.length() - 1) return Type.CONTAINS;
+			} else if (star == s.length() - 1) {
+				return Type.STARTS_WITH;
+			}
+
+			return Type.WILDCARD;
+		}
+
+		private String prepareMatch(String option, Type optionType)
+		{
+			return optionType == Type.WILDCARD ? generateWildcardMatcher(option) : removeStars(option);
+		}
+
+		// copied from runelite.
+		private static final Pattern WILDCARD_PATTERN = Pattern.compile("(?i)[^*]+|(\\*)");
+		private static String generateWildcardMatcher(String pattern)
+		{
+			final Matcher matcher = WILDCARD_PATTERN.matcher(pattern);
+			final StringBuffer buffer = new StringBuffer();
+
+			buffer.append("(?i)");
+			while (matcher.find())
+			{
+				if (matcher.group(1) != null)
+				{
+					matcher.appendReplacement(buffer, ".*");
+				}
+				else
+				{
+					matcher.appendReplacement(buffer, Matcher.quoteReplacement(Pattern.quote(matcher.group(0))));
+				}
+			}
+
+			matcher.appendTail(buffer);
+			return buffer.toString();
+		}
+
+		private String removeStars(String s)
+		{
+			return s == null ? s : s.replaceAll("\\*", "");
+		}
+
+		/** skip top option comparison, for testing */
+		boolean matches(String option, String target)
+		{
+			return matches(option, target, "", "");
+		}
+
+		public boolean matches(String option, String target, String topOption, String topTarget)
+		{
+			return matches(option, this.option, optionType) &&
+				matches(target, this.target, targetType) &&
+				matches(topOption, this.topOption, topOptionType) &&
+				matches(topTarget, this.topTarget, topTargetType);
+		}
+
+		private static boolean matches(String menuText, String swapText, Type type)
+		{
+			switch (type) {
+				case IGNORE:
+					return true;
+				case EQUALS:
+					return menuText.equals(swapText);
+				case STARTS_WITH:
+					return menuText.startsWith(swapText);
+				case ENDS_WITH:
+					return menuText.endsWith(swapText);
+				case CONTAINS:
+					return menuText.contains(swapText);
+				case WILDCARD:
+					return menuText.matches(swapText);
+				default:
+					// shouldn't happen.
+					throw new IllegalStateException();
+			}
 		}
 	}
 
@@ -828,13 +954,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		for (String customSwap : customSwaps.split("\n"))
 		{
 			if (customSwap.trim().equals("")) continue;
-			String[] split = customSwap.split(",");
-			swaps.add(new CustomSwap(
-				split[0].toLowerCase().trim(),
-				split.length > 1 ? split[1].toLowerCase().trim() : "",
-				split.length > 2 ? split[2].toLowerCase().trim() : null,
-				split.length > 3 ? split[3].toLowerCase().trim() : null
-			));
+			swaps.add(CustomSwap.fromString(customSwap));
 		}
 		return swaps;
 	}
@@ -874,7 +994,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				entryToSwap.setType(MenuAction.CC_OP);
 			}
 
-			if (topEntryIndex > entryIndex) // This might not be the case if you swap examine sometimes, because examine is actually above other options for some reason, sometimes. This means that the top entry will actually be below the entry you want swapped, because the top entry takes into account the client's sorting >1000 id options down.
+			if (topEntryIndex > entryIndex)
 			{
 				menuEntries[topEntryIndex] = entryToSwap;
 				menuEntries[entryIndex] = topEntry;
@@ -888,6 +1008,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	{
 		int entryIndex = -1;
 		int latestMatchingSwapIndex = -1;
+		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
+		String topEntryOption = Text.standardize(topEntry.getOption());
+		String topEntryTarget = Text.standardize(topEntry.getTarget());
 		// prefer to swap menu entries that are already at or near the top of the list.
 		for (int i = menuEntries.length - 1; i >= 0; i--)
 		{
@@ -895,7 +1018,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 			String option = Text.standardize(entry.getOption());
 			String target = Text.standardize(entry.getTarget());
-			int swapIndex = matches(option, target, menuEntries, swaps);
+			int swapIndex = matches(option, target, topEntryOption, topEntryTarget, swaps);
 			if (swapIndex > latestMatchingSwapIndex)
 			{
 				entryIndex = i;
@@ -922,7 +1045,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private boolean mayNotBeLeftClick(MenuEntry entry)
 	{
 		MenuAction type = entry.getType();
-		if (type.getId() >= PLAYER_FIRST_OPTION.getId() && type.getId() <= PLAYER_EIGTH_OPTION.getId()) {
+		if (type.getId() >= PLAYER_FIRST_OPTION.getId() && type.getId() <= PLAYER_EIGHTH_OPTION.getId()) {
 			return true;
 		}
 		if (type == MenuAction.NPC_FOURTH_OPTION || type == MenuAction.NPC_FIFTH_OPTION) {
@@ -942,11 +1065,14 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private MenuEntry[] filterEntries(MenuEntry[] menuEntries)
 	{
 		List<MenuEntry> filtered = new ArrayList<>();
+		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
+		String topEntryOption = Text.standardize(topEntry.getOption());
+		String topEntryTarget = Text.standardize(topEntry.getTarget());
 		for (MenuEntry entry : menuEntries)
 		{
 			String option = Text.standardize(Text.removeTags(entry.getOption()));
 			String target = Text.standardize(Text.removeTags(entry.getTarget()));
-			if (matches(option, target, menuEntries, customHides) == -1 || isProtected(entry))
+			if (matches(option, target, topEntryOption, topEntryTarget, customHides) == -1 || isProtected(entry))
 			{
 				filtered.add(entry);
 			}
@@ -954,35 +1080,13 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		return filtered.toArray(new MenuEntry[0]);
 	}
 
-	private int matches(String entryOption, String entryTarget, MenuEntry[] entries, List<CustomSwap> swaps)
+	private static int matches(String entryOption, String entryTarget, String topEntryOption, String topEntryTarget, List<CustomSwap> swaps)
 	{
-		MenuEntry topEntry = entries[entries.length - 1];
-		String target = Text.standardize(topEntry.getTarget());
-		String option = Text.standardize(topEntry.getOption());
 		for (int i = 0; i < swaps.size(); i++)
 		{
-			CustomSwap _configEntry = swaps.get(i);
-			if (
-				(
-					_configEntry.option.equals(entryOption)
-						|| WildcardMatcher.matches(_configEntry.option, entryOption)
-				)
-					&& (
-					_configEntry.target.equals(entryTarget)
-						|| WildcardMatcher.matches(_configEntry.target, entryTarget)
-				)
-			)
-			{
-				boolean a = (_configEntry.topOption == null);
-				boolean b = (_configEntry.topTarget == null);
-				Supplier<Boolean> c = () -> (_configEntry.topOption.equals(option) || WildcardMatcher
-					.matches(_configEntry.topOption, option));
-				Supplier<Boolean> d = () -> (_configEntry.topTarget.equals(target) || WildcardMatcher
-					.matches(_configEntry.topTarget, target));
-				if (a || b || (c.get() && d.get()))
-				{
-					return i;
-				}
+			CustomSwap swap = swaps.get(i);
+			if (swap.matches(entryOption, entryTarget, topEntryOption, topEntryTarget)) {
+				return i;
 			}
 		}
 		return -1;

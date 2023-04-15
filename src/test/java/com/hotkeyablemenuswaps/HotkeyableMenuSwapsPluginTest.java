@@ -14,7 +14,7 @@ public class HotkeyableMenuSwapsPluginTest
 	{
 		setWindowTitle("hotkeyable-menu-swaps (" + getCurrentGitBranch() + ") RL-" + RuneLiteProperties.getVersion());
 
-		System.setProperty("runelite.pluginhub.version", "1.8.24.1");
+//		System.setProperty("runelite.pluginhub.version", "1.8.24.1");
 		ExternalPluginManager.loadBuiltin(HotkeyableMenuSwapsPlugin.class, HotkeyableMenuSwapsToolsPlugin.class);
 		RuneLite.main(args);
 	}
