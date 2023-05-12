@@ -54,6 +54,7 @@ import net.runelite.api.MenuAction;
 import static net.runelite.api.MenuAction.*;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.FocusChanged;
+import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.widgets.WidgetID;
@@ -116,6 +117,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	final List<CustomSwap> customShiftSwaps = new ArrayList<>();
 	final List<CustomSwap> customHides = new ArrayList<>();
 
+	// Mirrors config field. This field is read quite often so doing this might be good for performance.
+	private boolean examineCancelLateRemoval = true;
+
 	@Provides
 	HotkeyableMenuSwapsConfig provideConfig(ConfigManager configManager)
 	{
@@ -129,6 +133,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		resetHotkeys();
 
 		keyManager.registerKeyListener(this);
+
+		examineCancelLateRemoval = config.examineCancelLateRemoval();
 
 		swapContains("venerate", "altar of the occult"::equals, "standard", () -> getCurrentOccultAltarSwap() == OccultAltarSwap.STANDARD);
 		swapContains("venerate", "altar of the occult"::equals, "ancient", () -> getCurrentOccultAltarSwap() == OccultAltarSwap.ANCIENT);
@@ -502,6 +508,14 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	// Copy-pasted from the official runelite menu entry swapper plugin.
 	private final Multimap<String, Swap> swaps = LinkedHashMultimap.create();
 	private final ArrayListMultimap<String, Integer> optionIndexes = ArrayListMultimap.create();
+
+	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with that plugin.
+	public void onMenuOpened(MenuOpened e) {
+		if (!examineCancelLateRemoval) return;
+
+		MenuEntry[] menuEntries = filterEntries(client.getMenuEntries(), true);
+		client.setMenuEntries(menuEntries);
+	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
 	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with this plugin.
@@ -933,6 +947,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	public void onConfigChanged(ConfigChanged configChanged) {
 		if (configChanged.getGroup().equals("hotkeyablemenuswaps")) {
 			reloadCustomSwaps();
+			examineCancelLateRemoval = config.examineCancelLateRemoval();
 		}
 	}
 
@@ -969,7 +984,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		MenuEntry[] menuEntries = client.getMenuEntries();
 		if (menuEntries.length == 0) return;
 
-		menuEntries = filterEntries(menuEntries);
+		menuEntries = filterEntries(menuEntries, false);
 		int topEntryIndex = menuEntries.length - 1;
 		if (topEntryIndex == -1) { // The filtering removed all the menu options. No swaps can happen, so return early.
 			client.setMenuEntries(menuEntries);
@@ -1062,7 +1077,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		return false;
 	}
 
-	private MenuEntry[] filterEntries(MenuEntry[] menuEntries)
+	private MenuEntry[] filterEntries(MenuEntry[] menuEntries, boolean isInOnMenuOpened)
 	{
 		List<MenuEntry> filtered = new ArrayList<>();
 		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
@@ -1070,6 +1085,17 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String topEntryTarget = Text.standardize(topEntry.getTarget());
 		for (MenuEntry entry : menuEntries)
 		{
+			// Skips applying custom hides to examine/cancel in PostMenuSwap, and to all other entries in MenuOpened.
+			if (examineCancelLateRemoval) {
+				int id = entry.getType().getId();
+				boolean isExamineOrCancel = id >= 1002 && id <= 1006;
+				if (isInOnMenuOpened ^ isExamineOrCancel)
+				{
+					filtered.add(entry);
+					continue;
+				}
+			}
+
 			String option = Text.standardize(Text.removeTags(entry.getOption()));
 			String target = Text.standardize(Text.removeTags(entry.getTarget()));
 			if (matches(option, target, topEntryOption, topEntryTarget, customHides) == -1 || isProtected(entry))

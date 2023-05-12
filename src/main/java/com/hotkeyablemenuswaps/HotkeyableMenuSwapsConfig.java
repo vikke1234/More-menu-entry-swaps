@@ -47,12 +47,23 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(
 		keyName = "customHides",
 		name = "Custom hides",
-		description = "Options to swap to the top.",
+		description = "Options to remove from the menu.",
 		section = customHidesSection,
 		position = 1
 	)
 	default String customHides() {
 		return "";
+	}
+
+	@ConfigItem(
+		keyName = "examineCancelLateRemoval",
+		name = "Examine/Cancel late removal",
+		description = "Keep enabled if you don't understand what this option does. Disabling it can prevent runelite's regular menu swapper from adding its shift-click config options, as well as interfere with cancelling a targeted spell. Specifically, this option prevents the \"Examine\" and \"Cancel\" options from being removed until you open the right-click menu.",
+		section = customHidesSection,
+		position = 2
+	)
+	default boolean examineCancelLateRemoval() {
+		return true;
 	}
 
 	@ConfigSection(name = "Custom swap instructions", description = "instructions", position = -7, closedByDefault = true)
