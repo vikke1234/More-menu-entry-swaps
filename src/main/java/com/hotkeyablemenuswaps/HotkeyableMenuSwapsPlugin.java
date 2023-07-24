@@ -57,6 +57,7 @@ import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import static net.runelite.api.widgets.WidgetID.SPELLBOOK_GROUP_ID;
 import net.runelite.api.widgets.WidgetInfo;
@@ -66,6 +67,7 @@ import net.runelite.client.config.Keybind;
 import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -128,6 +130,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Override
 	protected void startUp() {
+		migrate();
+
 		reloadCustomSwaps();
 
 		resetHotkeys();
@@ -152,6 +156,28 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Override
 	protected void shutDown() {
 		keyManager.unregisterKeyListener(this);
+	}
+
+	@Subscribe
+	public void onProfileChanged(ProfileChanged e) {
+		migrate();
+	}
+
+	private void migrate()
+	{
+		String serialVersion = configManager.getConfiguration("hotkeyablemenuswaps", "serialVersion");
+		if (serialVersion == null) {
+			if (
+				"Shift".equals(config.getSwapVenerateHotkey().toString()) ||
+				"Shift".equals(config.getSwapStandardHotkey().toString()) ||
+				"Shift".equals(config.getSwapAncientHotkey().toString()) ||
+				"Shift".equals(config.getSwapArceuusHotkey().toString())
+			) {
+				// avoid interfering with runelite MES shift-clicks.
+				configManager.setConfiguration("hotkeyablemenuswaps", "swapSpellbookSwap", false);
+			}
+		}
+		configManager.setConfiguration("hotkeyablemenuswaps", "serialVersion", 0);
 	}
 
 	private OccultAltarSwap getCurrentOccultAltarSwap() {
@@ -525,6 +551,15 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		MenuEntry[] menuEntries = client.getMenuEntries();
 
+		if (menuEntries.length == 0) return;
+
+		spellbookSwapSwaps(menuEntries);
+
+		mesPluginStyleSwaps(menuEntries);
+	}
+
+	private void mesPluginStyleSwaps(MenuEntry[] menuEntries)
+	{
 		// Build option map for quick lookup in findIndex
 		int idx = 0;
 		optionIndexes.clear();
@@ -656,6 +691,29 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				if (swap(swap.getSwappedOption(), target, index, swap.isStrict()))
 				{
 					break;
+				}
+			}
+		}
+	}
+
+	private void spellbookSwapSwaps(MenuEntry[] menuEntries)
+	{
+		MenuEntry topMenuEntry = menuEntries[menuEntries.length - 1];
+		Widget widget = topMenuEntry.getWidget();
+		if (widget == null) return;
+		int spriteId = widget.getSpriteId();
+		// The disabled icon is also necessary since it's possible to cast the spell even when the icon is disabled, if you will be able to cast it on the next tick.
+		if ((spriteId != 582 && spriteId != 632) || !config.swapSpellbookSwap()) return;
+
+		OccultAltarSwap currentSwap = this.hotkeyOccultAltarSwap;
+		if (currentSwap != null) {
+			for (int i = menuEntries.length - 1; i >= 0; i--) {
+				if (currentSwap.getSpellbookSwapMenuOptionName().equals(menuEntries[i].getOption())) {
+					MenuEntry temp = menuEntries[i];
+					menuEntries[i] = menuEntries[menuEntries.length - 1];
+					menuEntries[menuEntries.length - 1] = temp;
+					client.setMenuEntries(menuEntries);
+					return;
 				}
 			}
 		}

@@ -10,11 +10,11 @@ import java.util.function.Function;
 @Getter
 @RequiredArgsConstructor
 enum OccultAltarSwap {
-    VENERATE("venerate", HotkeyableMenuSwapsConfig::getSwapVenerateHotkey),
-    STANDARD("standard", HotkeyableMenuSwapsConfig::getSwapStandardHotkey),
-    ANCIENT("ancient", HotkeyableMenuSwapsConfig::getSwapAncientHotkey),
-    LUNAR("lunar", HotkeyableMenuSwapsConfig::getSwapLunarHotkey),
-    ARCEUUS("arceuus", HotkeyableMenuSwapsConfig::getSwapArceuusHotkey),
+    VENERATE("venerate", "Cast", HotkeyableMenuSwapsConfig::getSwapVenerateHotkey),
+    STANDARD("standard", "Standard", HotkeyableMenuSwapsConfig::getSwapStandardHotkey),
+    ANCIENT("ancient", "Ancient", HotkeyableMenuSwapsConfig::getSwapAncientHotkey),
+    LUNAR("lunar", "", HotkeyableMenuSwapsConfig::getSwapLunarHotkey),
+    ARCEUUS("arceuus", "Arceuus", HotkeyableMenuSwapsConfig::getSwapArceuusHotkey),
     ;
 
     public static OccultAltarSwap getCurrentSpellbookMenuOption(Client client) {
@@ -22,7 +22,8 @@ enum OccultAltarSwap {
     }
 
     private final String menuOptionName;
-    private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
+	private final String spellbookSwapMenuOptionName;
+	private final Function<HotkeyableMenuSwapsConfig, Keybind> keybindFunction;
 
     public Keybind getKeybind(HotkeyableMenuSwapsConfig config) {
         return keybindFunction.apply(config);

@@ -235,7 +235,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	}
 
 	@ConfigSection(
-			name = "Occult Altar",
+			name = "Occult Altar/Spellbook swap",
 			description = "Occult altar menu entry swaps",
 			position = 2
 	)
@@ -274,7 +274,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(
 			keyName = "occultAltarLeftClick",
 			name = "Left click",
-			description = "The occult altar's left-click option. The second option is used if you are already on the spellbook of the first option",
+			description = "The occult altar's left-click option. The second option is used if you are already on the spellbook of the first option. If you want to swap the spellbook swap spell's left-click option, use the runelite menu entry swapper plugin instead.",
 			section = occultAltarSection,
 			position = 0
 	)
@@ -285,8 +285,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "swapVenerateHotkey",
-			name = "Venerate",
-			description = "The hotkey which swaps \"Venerate\"",
+			name = "Venerate/Cast",
+			description = "The hotkey which swaps \"Venerate\" on the Occult Altar and \"Cast\" on Spellbook swap",
 			section = occultAltarSection,
 			position = 1
 	)
@@ -342,6 +342,11 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	{
 		return Keybind.NOT_SET;
 	}
+
+	@ConfigItem(name=
+		"Spellbook swap",
+		description = "Make the hotkeys work on spellbook swap.", keyName = "swapSpellbookSwap", section = occultAltarSection, position = 6
+	) default boolean swapSpellbookSwap() { return true; }
 
 	@ConfigSection(
 		name = "Jewellery box",
