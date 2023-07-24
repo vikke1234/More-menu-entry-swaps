@@ -77,7 +77,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		position = 2
 	)
 	default String customSwapperInstructions() {
-		return "### Basic use:\nAdd swaps, one per line. Format is \"option,target\". Supports wildcards (\"*\"). You can also swap a menu entry only when the top entry matches some text, by using the format \"option,target,topOption,topTarget\".\nExamples:\npick-lock,trapdoor\nclear,*bush\nuse,cannonball -> dwarf*\ntake,small fishing net,set-trap,young tree\n\n### Hiding:\nYou can hide menu entries with the same syntax, described above.\n\n### Limitations:\nSome menu entries won't be swapped per jagex's rules (player menu entries, spell casts, blackjacking and construction). This includes swapping that entry up, as well as swapping anything while one of these entries is already the left-click entry, as well as hiding entries above construction or blackjack entries.\n";
+		return "https://github.com/geheur/More-menu-entry-swaps/wiki/Custom-swaps";
 	}
 
 	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0)
