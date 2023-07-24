@@ -1154,8 +1154,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				}
 			}
 
-			String option = Text.standardize(Text.removeTags(entry.getOption()));
-			String target = Text.standardize(Text.removeTags(entry.getTarget()));
+			String option = Text.standardize(entry.getOption());
+			String target = Text.standardize(entry.getTarget());
 			if (matches(option, target, topEntryOption, topEntryTarget, customHides) == -1 || isProtected(entry))
 			{
 				filtered.add(entry);
