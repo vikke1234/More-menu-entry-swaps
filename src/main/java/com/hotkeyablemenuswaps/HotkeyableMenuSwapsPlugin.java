@@ -1061,16 +1061,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				return;
 			}
 
-			// the client will open the right-click menu on left-click if the entry at the top is a CC_OP_LOW_PRIORITY.
-			if (entryToSwap.getType() == MenuAction.CC_OP_LOW_PRIORITY)
-			{
-				entryToSwap.setType(MenuAction.CC_OP);
-			}
-
-			if (topEntryIndex > entryIndex)
-			{
+			boolean doNotSwapOverMinimapOrbs = topEntry.getWidget() != null && WidgetInfo.TO_GROUP(topEntry.getWidget().getId()) == 160 && entryToSwap.getWidget() == null && config.doNotSwapOverMinimapOrbs();
+			if (!doNotSwapOverMinimapOrbs && topEntryIndex > entryIndex) {
 				menuEntries[topEntryIndex] = entryToSwap;
 				menuEntries[entryIndex] = topEntry;
+
+				// the client will open the right-click menu on left-click if the entry at the top is a CC_OP_LOW_PRIORITY.
+				if (entryToSwap.getType() == MenuAction.CC_OP_LOW_PRIORITY)
+				{
+					entryToSwap.setType(MenuAction.CC_OP);
+				}
 			}
 		}
 

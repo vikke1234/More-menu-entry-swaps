@@ -55,17 +55,6 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "";
 	}
 
-	@ConfigItem(
-		keyName = "examineCancelLateRemoval",
-		name = "Examine/Cancel late removal",
-		description = "Keep enabled if you don't understand what this option does. Disabling it can prevent runelite's regular menu swapper from adding its shift-click config options, as well as interfere with cancelling a targeted spell. Specifically, this option prevents the \"Examine\" and \"Cancel\" options from being removed until you open the right-click menu.",
-		section = customHidesSection,
-		position = 2
-	)
-	default boolean examineCancelLateRemoval() {
-		return true;
-	}
-
 	@ConfigSection(name = "Custom swap instructions", description = "instructions", position = -7, closedByDefault = true)
 	String customSwapInstructions = "Custom swap instructions";
 
@@ -78,6 +67,32 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	)
 	default String customSwapperInstructions() {
 		return "https://github.com/geheur/More-menu-entry-swaps/wiki/Custom-swaps";
+	}
+
+	@ConfigSection(name = "Advanced", description = "Advanced options", position = -6, closedByDefault = true)
+	String advancedSection = "Advanced";
+
+	@ConfigItem(
+		keyName = "examineCancelLateRemoval",
+		name = "Examine/Cancel late removal",
+		description = "Keep enabled if you don't understand what this option does. Disabling it can prevent runelite's regular menu swapper from adding its shift-click config options, as well as interfere with cancelling a targeted spell. Specifically, this option prevents the \"Examine\" and \"Cancel\" options from being removed until you open the right-click menu.",
+		section = advancedSection,
+		position = 0
+	)
+	default boolean examineCancelLateRemoval() {
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "doNotSwapOverMinimapOrbs",
+		name = "Don't swap minimap orbs",
+		description = "Do not swap entries over the minimap orbs such as quick-prayer and special attack.",
+		section = advancedSection,
+		position = 1
+	)
+	default boolean doNotSwapOverMinimapOrbs()
+	{
+		return true;
 	}
 
 	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0)
