@@ -1145,8 +1145,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		{
 			// Skips applying custom hides to examine/cancel in PostMenuSwap, and to all other entries in MenuOpened.
 			if (examineCancelLateRemoval) {
-				int id = entry.getType().getId();
-				boolean isExamineOrCancel = id >= 1002 && id <= 1006;
+				boolean isExamineOrCancel = entry.getType() == MenuAction.CANCEL || entry.getOption().equals("Examine");
+
 				if (isInOnMenuOpened ^ isExamineOrCancel)
 				{
 					filtered.add(entry);
