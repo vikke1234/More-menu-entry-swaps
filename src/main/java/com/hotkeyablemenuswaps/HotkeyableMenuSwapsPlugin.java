@@ -32,16 +32,17 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
+import com.hotkeyablemenuswaps.GroundItemsStuff.GroundItem;
+import com.hotkeyablemenuswaps.GroundItemsStuff.NamedQuantity;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -49,10 +50,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
 import net.runelite.api.Client;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
 import static net.runelite.api.MenuAction.*;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.PostMenuSort;
@@ -68,6 +71,7 @@ import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.ProfileChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -89,20 +93,13 @@ import net.runelite.client.util.Text;
 @PluginDependency(MenuEntrySwapperPlugin.class)
 public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 {
-	@Inject
-	private Client client;
-
-	@Inject
-	private HotkeyableMenuSwapsConfig config;
-
-	@Inject
-	private KeyManager keyManager;
-
-	@Inject
-	private ConfigManager configManager;
-
-	@Inject
-	private MenuEntrySwapperConfig menuEntrySwapperConfig;
+	@Inject private Client client;
+	@Inject private HotkeyableMenuSwapsConfig config;
+	@Inject private KeyManager keyManager;
+	@Inject private ConfigManager configManager;
+	@Inject private MenuEntrySwapperConfig menuEntrySwapperConfig;
+	@Inject private ItemManager itemManager;
+	@Inject private GroundItemsStuff groundItemsStuff;
 
 	// If a hotkey corresponding to a swap is currently held, these variables will be non-null. currentBankModeSwap is an exception because it uses menu entry swapper's bank swap enum, which already has an "off" value.
 	// These variables do not factor in left-click swaps.
@@ -130,9 +127,11 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Override
 	protected void startUp() {
+
 		migrate();
 
 		reloadCustomSwaps();
+		reloadGroundItemSort();
 
 		resetHotkeys();
 
@@ -156,6 +155,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Override
 	protected void shutDown() {
 		keyManager.unregisterKeyListener(this);
+		groundItemsStuff.collectedGroundItems.clear();
+		groundItemsStuff.highlightedItems = null;
+		groundItemsStuff.hiddenItems = null;
 	}
 
 	@Subscribe
@@ -177,7 +179,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				configManager.setConfiguration("hotkeyablemenuswaps", "swapSpellbookSwap", false);
 			}
 		}
-		configManager.setConfiguration("hotkeyablemenuswaps", "serialVersion", 0);
+		configManager.setConfiguration("hotkeyablemenuswaps", "serialVersion", 1);
 	}
 
 	private OccultAltarSwap getCurrentOccultAltarSwap() {
@@ -543,10 +545,84 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		client.setMenuEntries(menuEntries);
 	}
 
-	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
+	private String[] groundItemSortNames = new String[0];
+	private MatchType[] groundItemSortTypes = new MatchType[0];
+	private int[] groundItemSortValues = new int[0];
+	private Boolean[] groundItemSortNoted = new Boolean[0];
+	private Integer highlightedItemValue = null;
+	private Integer hiddenItemValue = null;
+
+	private void reloadGroundItemSort() {
+		String s = config.groundItemSortCustomValues();
+		List<String> groundItemSortNames = new ArrayList<>();
+		List<MatchType> groundItemSortTypes = new ArrayList<>();
+		List<Integer> groundItemSortValues = new ArrayList<>();
+		List<Boolean> groundItemSortNoted = new ArrayList<>();
+		highlightedItemValue = null;
+		hiddenItemValue = null;
+		int defaultValue = Integer.MAX_VALUE;
+		for (String line : s.split("\n"))
+		{
+			if (line.trim().equals("")) continue;
+			String[] split = line.split(",");
+			if (split.length > 2) {
+				// TODO chat mesage.
+				continue;
+			}
+
+			int value = defaultValue;
+			if (split.length > 1)
+			{
+				try
+				{
+					value = Integer.parseInt(split[1]);
+				} catch (NumberFormatException e) {
+					value = 0;
+//					System.out.println("nfe");
+				}
+			} else {
+				defaultValue--;
+			}
+
+			String itemWildcard = split[0].trim().toLowerCase();
+			if (itemWildcard.equals("###highlighted###") || itemWildcard.equals("###highlight###")) {
+				highlightedItemValue = value;
+				continue;
+			} else if (itemWildcard.equals("###hidden###")) {
+				hiddenItemValue = value;
+				continue;
+			}
+
+			Boolean noted = null;
+			if (itemWildcard.startsWith("unnoted:")) {
+				noted = Boolean.FALSE;
+				itemWildcard = itemWildcard.substring(itemWildcard.indexOf(':') + 1);
+			}
+			else if (itemWildcard.startsWith("noted:") || itemWildcard.startsWith("note:")) {
+				noted = Boolean.TRUE;
+				itemWildcard = itemWildcard.substring(itemWildcard.indexOf(':') + 1);
+			}
+
+			MatchType type = MatchType.getType(itemWildcard);
+			String matchString = MatchType.prepareMatch(itemWildcard, type);
+			groundItemSortNames.add(matchString);
+			groundItemSortTypes.add(type);
+			groundItemSortValues.add(value);
+			groundItemSortNoted.add(noted);
+//			System.out.println(matchString + " " + value + " " + noted + " " + type);
+		}
+		this.groundItemSortNames = groundItemSortNames.toArray(new String[groundItemSortNames.size()]);
+		this.groundItemSortTypes = groundItemSortTypes.toArray(new MatchType[groundItemSortTypes.size()]);
+		this.groundItemSortValues = groundItemSortValues.stream().mapToInt(i -> i).toArray();
+		this.groundItemSortNoted = groundItemSortNoted.toArray(new Boolean[groundItemSortNoted.size()]);
+
+		groundItemsStuff.reloadGroundItemPluginLists(highlightedItemValue != null, hiddenItemValue != null, false);
+	}
+
 	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with this plugin.
 	public void onPostMenuSort(PostMenuSort e)
 	{
+		sortGroundItems();
 		customSwaps();
 
 		MenuEntry[] menuEntries = client.getMenuEntries();
@@ -574,6 +650,82 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		{
 			swapMenuEntry(menuEntries, i);
 		}
+	}
+
+	@RequiredArgsConstructor
+	private static class MenuEntryWithValue {
+		private final MenuEntry entry;
+		private final int value;
+	}
+
+	private void sortGroundItems()
+	{
+		if (groundItemSortTypes.length == 0 && highlightedItemValue == null && hiddenItemValue == null) return;
+
+		// find a group of contiguous ground items while recording the value of each entry, then sort the block of ground items.
+		MenuEntry[] menuEntries = client.getMenuEntries();
+		int groundItemBlockStart = -1;
+		List<MenuEntryWithValue> groundItemEntries = new ArrayList<>(menuEntries.length);
+		nextMenuEntry:
+		for (int i = 0; i < menuEntries.length; i++)
+		{
+			MenuEntry menuEntry = menuEntries[i];
+
+			// menu entry is not a ground item menu entry. This may be the end of a take menu entry block, so sort any take menu entries that have been collected so far.
+			if (menuEntry.getType().getId() < WIDGET_TARGET_ON_GROUND_ITEM.getId() || menuEntry.getType().getId() > GROUND_ITEM_FIFTH_OPTION.getId()) {
+				if (groundItemBlockStart != -1) {
+					groundItemEntries.sort(Comparator.comparingInt(e -> e.value));
+					for (int j = 0; j < groundItemEntries.size(); j++) {
+						menuEntries[groundItemBlockStart + j] = groundItemEntries.get(j).entry;
+					}
+					groundItemEntries.clear();
+					groundItemBlockStart = -1;
+				}
+				continue nextMenuEntry;
+			}
+
+			// menu entry is a ground item menu entry
+			if (groundItemBlockStart == -1) groundItemBlockStart = i;
+
+			int itemId = menuEntry.getIdentifier();
+			ItemComposition itemComposition = itemManager.getItemComposition(itemId);
+			String itemName = itemComposition.getName().toLowerCase();
+//			System.out.println("\t" + "a ground item " + itemName + " " + menuEntry.getItemId() + " " + menuEntry.getIdentifier() + " " + menuEntry.getParam1() + " " + menuEntry.getParam0());
+			for (int j = 0; j < groundItemSortTypes.length; j++)
+			{
+				if (groundItemSortTypes[j].matches(itemName, groundItemSortNames[j])) {
+					if (groundItemSortNoted[j] != null) {
+						boolean noted = itemComposition.getNote() == 799;
+						if (noted ^ groundItemSortNoted[j]) continue;
+					}
+					groundItemEntries.add(new MenuEntryWithValue(menuEntry, groundItemSortValues[j]));
+					continue nextMenuEntry;
+				}
+			}
+			if (highlightedItemValue != null || hiddenItemValue != null) {
+				int sceneX = menuEntry.getParam0();
+				int sceneY = menuEntry.getParam1();
+				final WorldPoint worldPoint = WorldPoint.fromScene(client, sceneX, sceneY, client.getPlane());
+				GroundItem groundItem = groundItemsStuff.collectedGroundItems.get(worldPoint, itemId);
+				NamedQuantity key = new NamedQuantity(groundItem.getName(), groundItem.getQuantity());
+				if (highlightedItemValue != null && groundItemsStuff.highlightedItems.getUnchecked(key) == Boolean.TRUE) {
+					groundItemEntries.add(new MenuEntryWithValue(menuEntry, highlightedItemValue));
+					continue nextMenuEntry;
+				}
+				if (hiddenItemValue != null && groundItemsStuff.hiddenItems.getUnchecked(key) == Boolean.TRUE) {
+					groundItemEntries.add(new MenuEntryWithValue(menuEntry, hiddenItemValue));
+					continue nextMenuEntry;
+				}
+			}
+			groundItemEntries.add(new MenuEntryWithValue(menuEntry, 0));
+		}
+		if (groundItemBlockStart != -1) {
+			groundItemEntries.sort(Comparator.comparingInt(e -> e.value));
+			for (int j = 0; j < groundItemEntries.size(); j++) {
+				menuEntries[groundItemBlockStart + j] = groundItemEntries.get(j).entry;
+			}
+		}
+		client.setMenuEntries(menuEntries);
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.
@@ -870,19 +1022,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		private final String topOption;
 		private final String topTarget;
 
-		private final Type optionType;
-		private final Type targetType;
-		private final Type topOptionType;
-		private final Type topTargetType;
-
-		private enum Type {
-			EQUALS,
-			STARTS_WITH,
-			ENDS_WITH,
-			CONTAINS,
-			WILDCARD,
-			IGNORE
-		}
+		private final MatchType optionType;
+		private final MatchType targetType;
+		private final MatchType topOptionType;
+		private final MatchType topTargetType;
 
 		public static CustomSwap fromString(String s)
 		{
@@ -902,67 +1045,15 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		CustomSwap(String option, String target, String topOption, String topTarget)
 		{
-			this.optionType = getType(option);
-			this.option = prepareMatch(option, optionType);
-			this.targetType = getType(target);
-			this.target = prepareMatch(target, targetType);
-			this.topOptionType = getType(topOption);
-			this.topOption = prepareMatch(topOption, topOptionType);
-			this.topTargetType = getType(topTarget);
-			this.topTarget = prepareMatch(topTarget, topTargetType);
+			this.optionType = MatchType.getType(option);
+			this.option = MatchType.prepareMatch(option, optionType);
+			this.targetType = MatchType.getType(target);
+			this.target = MatchType.prepareMatch(target, targetType);
+			this.topOptionType = MatchType.getType(topOption);
+			this.topOption = MatchType.prepareMatch(topOption, topOptionType);
+			this.topTargetType = MatchType.getType(topTarget);
+			this.topTarget = MatchType.prepareMatch(topTarget, topTargetType);
 //			System.out.println("types for " + option + " " + target + " "+ topOption + " " + topTarget + " " + optionType + " " + targetType + " " + topOptionType + " " + topTargetType);
-		}
-
-		private static Type getType(String s)
-		{
-			if (s == null) return Type.IGNORE;
-
-			int star = s.indexOf('*');
-			if (star == -1) return Type.EQUALS;
-			if (star == 0) {
-				if (s.length() == 1) return Type.IGNORE;
-				star = s.indexOf('*', star + 1);
-				if (star == -1) return Type.ENDS_WITH;
-				if (star == s.length() - 1) return Type.CONTAINS;
-			} else if (star == s.length() - 1) {
-				return Type.STARTS_WITH;
-			}
-
-			return Type.WILDCARD;
-		}
-
-		private String prepareMatch(String option, Type optionType)
-		{
-			return optionType == Type.WILDCARD ? generateWildcardMatcher(option) : removeStars(option);
-		}
-
-		// copied from runelite.
-		private static final Pattern WILDCARD_PATTERN = Pattern.compile("(?i)[^*]+|(\\*)");
-		private static String generateWildcardMatcher(String pattern)
-		{
-			final Matcher matcher = WILDCARD_PATTERN.matcher(pattern);
-			final StringBuffer buffer = new StringBuffer();
-
-			buffer.append("(?i)");
-			while (matcher.find())
-			{
-				if (matcher.group(1) != null)
-				{
-					matcher.appendReplacement(buffer, ".*");
-				}
-				else
-				{
-					matcher.appendReplacement(buffer, Matcher.quoteReplacement(Pattern.quote(matcher.group(0))));
-				}
-			}
-
-			matcher.appendTail(buffer);
-			return buffer.toString();
-		}
-
-		private String removeStars(String s)
-		{
-			return s == null ? s : s.replaceAll("\\*", "");
 		}
 
 		/** skip top option comparison, for testing */
@@ -973,31 +1064,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		public boolean matches(String option, String target, String topOption, String topTarget)
 		{
-			return matches(option, this.option, optionType) &&
-				matches(target, this.target, targetType) &&
-				matches(topOption, this.topOption, topOptionType) &&
-				matches(topTarget, this.topTarget, topTargetType);
-		}
-
-		private static boolean matches(String menuText, String swapText, Type type)
-		{
-			switch (type) {
-				case IGNORE:
-					return true;
-				case EQUALS:
-					return menuText.equals(swapText);
-				case STARTS_WITH:
-					return menuText.startsWith(swapText);
-				case ENDS_WITH:
-					return menuText.endsWith(swapText);
-				case CONTAINS:
-					return menuText.contains(swapText);
-				case WILDCARD:
-					return menuText.matches(swapText);
-				default:
-					// shouldn't happen.
-					throw new IllegalStateException();
-			}
+			return optionType.matches(option, this.option) &&
+				targetType.matches(target, this.target) &&
+				topOptionType.matches(topOption, this.topOption) &&
+				topTargetType.matches(topTarget, this.topTarget);
 		}
 	}
 
@@ -1005,7 +1075,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	public void onConfigChanged(ConfigChanged configChanged) {
 		if (configChanged.getGroup().equals("hotkeyablemenuswaps")) {
 			reloadCustomSwaps();
+			reloadGroundItemSort();
 			examineCancelLateRemoval = config.examineCancelLateRemoval();
+		} else if (configChanged.getGroup().equals("grounditems") && (configChanged.getKey().equals("highlightedItems") || configChanged.getKey().equals("hiddenItems"))) {
+			groundItemsStuff.reloadGroundItemPluginLists(highlightedItemValue != null, hiddenItemValue != null, true);
 		}
 	}
 
@@ -1084,10 +1157,20 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
 		String topEntryOption = Text.standardize(topEntry.getOption());
 		String topEntryTarget = Text.standardize(topEntry.getTarget());
+		boolean doNotSwapDeprioritizedTake = config.doNotSwapDeprioritizedGroundItems();
+		boolean seenWalkHere = false;
 		// prefer to swap menu entries that are already at or near the top of the list.
 		for (int i = menuEntries.length - 1; i >= 0; i--)
 		{
 			MenuEntry entry = menuEntries[i];
+
+			if (doNotSwapDeprioritizedTake) {
+				if (entry.getType() == MenuAction.WALK) {
+					seenWalkHere = true;
+				} else if (seenWalkHere && entry.getType().getId() >= WIDGET_TARGET_ON_GROUND_ITEM.getId() && entry.getType().getId() <= GROUND_ITEM_FIFTH_OPTION.getId()) {
+					continue;
+				}
+			}
 
 			String option = Text.standardize(entry.getOption());
 			String target = Text.standardize(entry.getTarget());

@@ -95,7 +95,38 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return true;
 	}
 
-	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0)
+	@ConfigSection(name = "Ground Item Sort", description = "", position = -8)
+	String groundItemSortSection = "Ground Item Sort";
+
+	@ConfigItem(
+		keyName = "groundItemSortCustomValues",
+		name = "Ground item order",
+		description = "Put item names on separate lines in the order you want them to appear in the top of the menu.<br>" +
+			"Wildcards (*) are supported.<br>" +
+			"You can assign values e.g. \"*defender,100000\" instead of changing the order, but note that lines with no value have a very high value (approximately 2.147b), and items not in the list have value 0.<br>" +
+			"Negative values are supported \"bones,-1\".<br>" +
+			"Noted items supported via \"noted:iron ore\" \"unnoted:iron ore\".<br>" +
+			"\"###highlighted###\" and \"###hidden###\" represent any item that is in those lists in the ground items plugin.<br>" +
+			"No support for item quantities.",
+		section = groundItemSortSection,
+		position = 1
+	)
+	default String groundItemSortCustomValues() {
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "doNotSwapDeprioritizedGroundItems",
+		name = "Don't swap deprioritized \"Take\"",
+		description = "Do not allow custom swaps like \"take,*\" to swap \"Take\" options that are deprioritized (below the \"Walk here\" option), such as those deprioritized via the Ground Items plugin.",
+		section = groundItemSortSection,
+		position = 2
+	)
+	default boolean doNotSwapDeprioritizedGroundItems() {
+		return false;
+	}
+
+	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0, closedByDefault = true)
 	String bankSection = "bank";
 
 	@ConfigItem(
@@ -197,7 +228,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(
 			name = "Spirit tree/Fairy ring",
 			description = "All options that swap entries on a spirit tree or fairy ring",
-			position = 1
+			position = 1,
+			closedByDefault = true
 	)
 	String treeRingSection = "treeRing";
 
@@ -252,7 +284,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(
 			name = "Occult Altar/Spellbook swap",
 			description = "Occult altar menu entry swaps",
-			position = 2
+			position = 2,
+			closedByDefault = true
 	)
 	String occultAltarSection = "occultAltar";
 
@@ -366,7 +399,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(
 		name = "Jewellery box",
 		description = "The jewellery box in a player owned house.",
-		position = 3
+		position = 3,
+		closedByDefault = true
 	)
 	String jewelleryBoxSection = "jewelleryBox";
 
@@ -385,7 +419,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(
 		name = "Portal Nexus",
 		description = "Things in the player owned house portal nexus.",
-		position = 4
+		position = 4,
+		closedByDefault = true
 	)
 	String portalNexusSection = "portalNexus";
 
@@ -524,7 +559,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(
 			name = "Inventory",
 			description = "Inventory menu entry swaps",
-			position = 5
+			position = 5,
+			closedByDefault = true
 	)
 	String inventorySection = "inventory";
 
@@ -539,36 +575,4 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	{
 		return Keybind.NOT_SET;
 	}
-
-//	@ConfigSection(
-//		name = "Other",
-//		description = "Other swaps",
-//		position = 4
-//	)
-//	String otherSection = "other";
-//
-//	@ConfigItem(
-//		keyName = "swapJewelleryBoxHotkey",
-//		name = "Swap Jewellery Box",
-//		description = "swap the second with the first menu option on the Jewellery Box",
-//		section = otherSection,
-//		position = 0
-//	)
-//	default Keybind getSwapJewelleryBoxHotkey()
-//	{
-//		return Keybind.NOT_SET;
-//	}
-//
-//	@ConfigItem(
-//		keyName = "swapPortalNexusHotkey",
-//		name = "Swap Portal Nexus",
-//		description = "swap the second with the first menu option on the Portal Nexus",
-//		section = otherSection,
-//		position = 1
-//	)
-//	default Keybind getSwapPortalNexusHotkey()
-//	{
-//		return Keybind.NOT_SET;
-//	}
-//
 }
