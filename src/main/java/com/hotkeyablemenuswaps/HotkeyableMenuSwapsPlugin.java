@@ -60,11 +60,9 @@ import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetID;
-import static net.runelite.api.widgets.WidgetID.SPELLBOOK_GROUP_ID;
-import net.runelite.api.widgets.WidgetInfo;
-import static net.runelite.api.widgets.WidgetInfo.TO_GROUP;
+import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.RuneLiteConfig;
@@ -464,10 +462,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			return false;
 		}
 
-		final int widgetGroupId = WidgetInfo.TO_GROUP(menuEntry.getParam1());
-		final boolean isDepositBoxPlayerInventory = widgetGroupId == WidgetID.DEPOSIT_BOX_GROUP_ID;
-		final boolean isChambersOfXericStorageUnitPlayerInventory = widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_INVENTORY_GROUP_ID;
-		final boolean isGroupStoragePlayerInventory = widgetGroupId == WidgetID.GROUP_STORAGE_INVENTORY_GROUP_ID;
+		final int widgetGroupId = WidgetUtil.componentToInterface(menuEntry.getParam1());
+		final boolean isDepositBoxPlayerInventory = widgetGroupId == InterfaceID.DEPOSIT_BOX;
+		final boolean isChambersOfXericStorageUnitPlayerInventory = widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_INVENTORY;
+		final boolean isGroupStoragePlayerInventory = widgetGroupId == InterfaceID.GROUP_STORAGE_INVENTORY;
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x for deposit box interface and chambers of xeric storage unit.
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
 		if (
@@ -493,7 +491,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		) {
 			final MenuAction action;
 			final int opId;
-			if (widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE_GROUP_ID || widgetGroupId == WidgetID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED_GROUP_ID)
+			if (widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE || widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED)
 			{
 				action = MenuAction.CC_OP;
 				opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
@@ -1133,7 +1131,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				return;
 			}
 
-			boolean doNotSwapOverMinimapOrbs = topEntry.getWidget() != null && WidgetInfo.TO_GROUP(topEntry.getWidget().getId()) == 160 && entryToSwap.getWidget() == null && config.doNotSwapOverMinimapOrbs();
+			boolean doNotSwapOverMinimapOrbs = topEntry.getWidget() != null && WidgetUtil.componentToInterface(topEntry.getWidget().getId()) == 160 && entryToSwap.getWidget() == null && config.doNotSwapOverMinimapOrbs();
 			if (!doNotSwapOverMinimapOrbs && topEntryIndex > entryIndex) {
 				menuEntries[topEntryIndex] = entryToSwap;
 				menuEntries[entryIndex] = topEntry;
@@ -1187,7 +1185,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	{
 		MenuAction type = entry.getType();
 		if (type == WIDGET_TARGET_ON_PLAYER || type == WIDGET_TARGET_ON_NPC) {
-			if (TO_GROUP(client.getSelectedWidget().getId()) == SPELLBOOK_GROUP_ID) {
+			if (WidgetUtil.componentToInterface(client.getSelectedWidget().getId()) == InterfaceID.SPELLBOOK) {
 				return true;
 			}
 		}
