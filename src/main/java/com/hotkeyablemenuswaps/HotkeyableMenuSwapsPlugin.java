@@ -179,7 +179,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				configManager.setConfiguration("hotkeyablemenuswaps", "swapSpellbookSwap", false);
 			}
 		}
-		configManager.setConfiguration("hotkeyablemenuswaps", "serialVersion", 1);
+		configManager.setConfiguration("hotkeyablemenuswaps", "serialVersion", 2);
 	}
 
 	private OccultAltarSwap getCurrentOccultAltarSwap() {
@@ -575,10 +575,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			{
 				try
 				{
-					value = Integer.parseInt(split[1]);
+					value = Integer.parseInt(split[1].trim());
 				} catch (NumberFormatException e) {
 					value = 0;
-//					System.out.println("nfe");
 				}
 			} else {
 				defaultValue--;
