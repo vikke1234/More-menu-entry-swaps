@@ -575,4 +575,118 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	{
 		return Keybind.NOT_SET;
 	}
+
+
+
+	@ConfigSection(
+		name = "Max Cape (equipped)",
+		description = "Max Cape hotkeys",
+		position = 6,
+		closedByDefault = true
+	)
+	String maxCapeSection = "maxCape";
+
+	@ConfigItem(
+		keyName = "maxCapeCraftingGuildSwapHotKey",
+		name = "Crafting Guild",
+		description = "",
+		section = maxCapeSection,
+		position = 0
+	)
+	default Keybind maxCapeCraftingGuildSwapHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "maxCapeWarriorsGuildSwapHotKey", 
+		name = "Warriors Guild",
+		description = "",
+		section = maxCapeSection,
+		position = 1
+		)
+	default Keybind maxCapeWarriorsGuildSwapHotKey() {
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "maxCapeTelePOHSwapHotKey", 
+		name = "Tele to POH",
+		description = "",
+		section = maxCapeSection,
+		position = 2
+		)
+	default Keybind maxCapeTelePOHSwapHotKey() {
+		return Keybind.NOT_SET;
+	}
+
+
+
+	@ConfigSection(
+		name = "Book of the dead (equipped)",
+		description = "Book of the dead hotkeys",
+		position = 7,
+		closedByDefault = true
+	)
+	String botdSection = "botd";
+
+	@ConfigItem(
+		keyName = "botdHosidiusHotKey",
+		name = "Hosidius",
+		description = "",
+		section = botdSection,
+		position = 0
+	)
+	default Keybind botdHosidiusHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "botdPiscariliusHotKey",
+		name = "Piscarilius",
+		description = "",
+		section = botdSection,
+		position = 0
+	)
+	default Keybind botdPiscariliusHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "botdShayzeinHotKey",
+		name = "Shayzein",
+		description = "",
+		section = botdSection,
+		position = 0
+	)
+	default Keybind botdShayzeinHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "botdLovakengjHotKey",
+		name = "Lovakengj",
+		description = "",
+		section = botdSection,
+		position = 0
+	)
+	default Keybind botdLovakengjHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
+
+	@ConfigItem(
+		keyName = "botdArceuusHotKey",
+		name = "Arceuus",
+		description = "",
+		section = botdSection,
+		position = 0
+	)
+	default Keybind botdArceuusHotKey()
+	{
+		return Keybind.NOT_SET;
+	}
 }
