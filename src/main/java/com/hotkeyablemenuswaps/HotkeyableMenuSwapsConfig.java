@@ -131,7 +131,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		name = "Price Sort",
 		description =
 			"Grand Exchange: Use Grand Exchange price<br>" +
-			"max(GE, High Alch): Use highest of Grand Exchange price and High Alchemy price" +
+			"max(GE, High Alch): Use highest of Grand Exchange price and High Alchemy price<br>" +
 			"Items you've entered into the ground item sort list will use that list's value instead.",
 		section = groundItemSortSection,
 		position = 3
