@@ -175,9 +175,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Override
 	protected void shutDown() {
 		keyManager.unregisterKeyListener(this);
-		groundItemsStuff.collectedGroundItems.clear();
-		groundItemsStuff.highlightedItems = null;
-		groundItemsStuff.hiddenItems = null;
+		groundItemsStuff.reloadGroundItemPluginLists(false, false, false, false);
 	}
 
 	@Subscribe
