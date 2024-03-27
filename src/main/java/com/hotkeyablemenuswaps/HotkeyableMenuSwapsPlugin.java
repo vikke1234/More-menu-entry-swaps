@@ -524,20 +524,22 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		final boolean isDepositBoxPlayerInventory = widgetGroupId == InterfaceID.DEPOSIT_BOX;
 		final boolean isChambersOfXericStorageUnitPlayerInventory = widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_INVENTORY;
 		final boolean isGroupStoragePlayerInventory = widgetGroupId == InterfaceID.GROUP_STORAGE_INVENTORY;
+		final boolean isPriceChecker = widgetGroupId == InterfaceID.GUIDE_PRICES_INVENTORY || widgetGroupId == InterfaceID.GUIDE_PRICES;
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x for deposit box interface and chambers of xeric storage unit.
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
 		if (
 			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_ALL_BUT_1
 			&& type == MenuAction.CC_OP
-			&& menuEntry.getIdentifier() == (isDepositBoxPlayerInventory || isGroupStoragePlayerInventory || isChambersOfXericStorageUnitPlayerInventory ? 1 : 2)
-			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate"))
+			&& menuEntry.getIdentifier() == (isDepositBoxPlayerInventory || isGroupStoragePlayerInventory || isChambersOfXericStorageUnitPlayerInventory || isPriceChecker ? 1 : 2)
+			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate") || menuEntry.getOption().startsWith("Add"))
 		) {
 			final int opId = isDepositBoxPlayerInventory ? currentBankModeSwap.getDepositIdentifierDepositBox()
 				: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
 				: isGroupStoragePlayerInventory ? currentBankModeSwap.getDepositIdentifierGroupStorage()
+				: widgetGroupId == InterfaceID.SEED_VAULT_INVENTORY ? currentBankModeSwap.getIdentifierSeedVault()
+				: isPriceChecker ? currentBankModeSwap.getPriceCheckerIdentifier()
 				: currentBankModeSwap.getDepositIdentifier();
-			final MenuAction action = opId >= 6 ? MenuAction.CC_OP_LOW_PRIORITY : MenuAction.CC_OP;
-			bankModeSwap(action, opId);
+			bankModeSwap(opId);
 			return true;
 		}
 
@@ -545,21 +547,24 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (
 			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_EXTRA_OP
 			&& type == MenuAction.CC_OP && menuEntry.getIdentifier() == 1
-			&& menuEntry.getOption().startsWith("Withdraw")
+			&& (menuEntry.getOption().startsWith("Withdraw") || menuEntry.getOption().startsWith("Remove"))
 		) {
-			final MenuAction action;
 			final int opId;
 			if (widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE || widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED)
 			{
-				action = MenuAction.CC_OP;
 				opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
 			}
 			else
 			{
-				action = currentBankModeSwap.getWithdrawMenuAction();
-				opId = currentBankModeSwap.getWithdrawIdentifier();
+				if (widgetGroupId == InterfaceID.SEED_VAULT) {
+					opId = currentBankModeSwap.getIdentifierSeedVault();
+				} else if (isPriceChecker) {
+					opId = currentBankModeSwap.getPriceCheckerIdentifier();
+				} else {
+					opId = currentBankModeSwap.getWithdrawIdentifier();
+				}
 			}
-			bankModeSwap(action, opId);
+			bankModeSwap(opId);
 			return true;
 		}
 
@@ -567,7 +572,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin.
-	private void bankModeSwap(MenuAction entryType, int entryIdentifier)
+	private void bankModeSwap(int entryIdentifier)
 	{
 		MenuEntry[] menuEntries = client.getMenuEntries();
 
@@ -575,7 +580,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		{
 			MenuEntry entry = menuEntries[i];
 
-			if (entry.getType() == entryType && entry.getIdentifier() == entryIdentifier)
+			if (entry.getIdentifier() == entryIdentifier)
 			{
 				// Raise the priority of the op so it doesn't get sorted later
 				entry.setType(MenuAction.CC_OP);

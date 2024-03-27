@@ -140,13 +140,13 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return GroundItemPriceSortMode.DISABLED;
 	}
 
-	@ConfigSection(name = "Bank", description = "All options that swap entries in the bank", position = 0, closedByDefault = true)
+	@ConfigSection(name = "Bank", description = "Swap menu entries in the bank, deposit box, seed vault, price checker interface, and chambers storage unit.", position = 0, closedByDefault = true)
 	String bankSection = "bank";
 
 	@ConfigItem(
 			keyName = "bankSwap1Hotkey",
-			name = "Bank 1",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit 1 option",
+			name = "1",
+			description = "The hotkey which, when held, swaps the withdraw/deposit 1 option",
 			section = bankSection,
 			position = 0
 	)
@@ -157,8 +157,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwap5Hotkey",
-			name = "Bank 5",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit 5 option",
+			name = "5",
+			description = "The hotkey which, when held, swaps the withdraw/deposit 5 option",
 			section = bankSection,
 			position = 1
 	)
@@ -169,8 +169,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwap10Hotkey",
-			name = "Bank 10",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit 10 option",
+			name = "10",
+			description = "The hotkey which, when held, swaps the withdraw/deposit 10 option",
 			section = bankSection,
 			position = 2
 	)
@@ -181,8 +181,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwapXHotkey",
-			name = "Bank X",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit X option",
+			name = "X",
+			description = "The hotkey which, when held, swaps the withdraw/deposit X option",
 			section = bankSection,
 			position = 3
 	)
@@ -193,8 +193,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwapSetXHotkey",
-			name = "Bank Set-X",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit SetX option",
+			name = "Set-X",
+			description = "The hotkey which, when held, swaps the withdraw/deposit SetX option",
 			section = bankSection,
 			position = 4
 	)
@@ -205,8 +205,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwapAllHotkey",
-			name = "Bank All",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit All option",
+			name = "All",
+			description = "The hotkey which, when held, swaps the withdraw/deposit All option",
 			section = bankSection,
 			position = 5
 	)
@@ -217,8 +217,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "bankSwapAllBut1Hotkey",
-			name = "Withdraw All-But-1",
-			description = "The hotkey which, when held, swaps the bank's withdraw/deposit AllBut1 option",
+			name = "All-But-1",
+			description = "The hotkey which, when held, swaps the withdraw AllBut1 option",
 			section = bankSection,
 			position = 6
 	)
