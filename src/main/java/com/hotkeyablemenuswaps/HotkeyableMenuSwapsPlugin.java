@@ -116,8 +116,13 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private volatile PortalNexusDigsitePendantSwap swapPortalNexusDigsitePendant;
 
 	final List<CustomSwap> customSwaps = new ArrayList<>();
+	final List<CustomSwap>[] customHotkeySwaps = new List[HOTKEY_COUNT];
 	final List<CustomSwap> customShiftSwaps = new ArrayList<>();
 	final List<CustomSwap> customHides = new ArrayList<>();
+
+	private static final int HOTKEY_COUNT = 10;
+	private int hotkeys = 0; // bitfield.
+	private List<Keybind> customSwapKeybinds = new ArrayList<>();
 
 	// Mirrors config field. This field is read quite often so doing this might be good for performance.
 	private boolean examineCancelLateRemoval = true;
@@ -351,6 +356,12 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Override
 	public void keyPressed(KeyEvent e)
 	{
+		for (int i = 0; i < customSwapKeybinds.size(); i++) {
+			if (customSwapKeybinds.get(i).matches(e)) {
+				hotkeys |= 1 << i;
+			}
+		}
+
 		// ignoring the current left click option allows one keybind to be used for two different swaps - e.g. the
 		// same keybind for both "1" and "all", which makes bank-1 accessible while the left-click option is set
 		// to "all" via the vanilla bank interface, without requiring an additional keybind.
@@ -424,6 +435,12 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Override
 	public void keyReleased(KeyEvent e)
 	{
+		for (int i = 0; i < customSwapKeybinds.size(); i++) {
+			if (customSwapKeybinds.get(i).matches(e)) {
+				hotkeys &= ~(1 << i);
+			}
+		}
+
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
 			if ((swapMode.getKeybind(config)).matches(e) && swapMode == currentBankModeSwap) {
 				currentBankModeSwap = BankSwapMode.OFF;
@@ -1166,6 +1183,14 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		customSwaps.clear();
 		customSwaps.addAll(loadCustomSwaps(config.customSwaps()));
 
+		customSwapKeybinds.clear();
+		for (int i = 0; i < HOTKEY_COUNT; i++)
+		{
+			customSwapKeybinds.add(configManager.getConfiguration("hotkeyablemenuswaps", "hotkey" + (i + 1), Keybind.class));
+			customHotkeySwaps[i] = new ArrayList<>();
+			customHotkeySwaps[i].addAll(loadCustomSwaps(configManager.getConfiguration("hotkeyablemenuswaps", "hotkey" + (i + 1) + "Swaps", String.class)));
+		}
+
 		customShiftSwaps.clear();
 		customShiftSwaps.addAll(loadCustomSwaps(config.customShiftSwaps()));
 
@@ -1175,6 +1200,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	private Collection<? extends CustomSwap> loadCustomSwaps(String customSwaps)
 	{
+		if (customSwaps == null) return Collections.emptyList();
 		List<CustomSwap> swaps = new ArrayList<>();
 		for (String customSwap : customSwaps.split("\n"))
 		{
@@ -1205,7 +1231,21 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			return;
 		}
 
-		int entryIndex = getEntryIndexToSwap(menuEntries, shiftModifier() ? customShiftSwaps : customSwaps);
+		List<CustomSwap> swaps = shiftModifier() ? customShiftSwaps : customSwaps;
+		if (hotkeys > 0)
+		{
+			List<CustomSwap> temp = swaps;
+			swaps = new ArrayList<>();
+			swaps.addAll(temp);
+			for (int i = 0; i < HOTKEY_COUNT; i++)
+			{
+				if ((hotkeys & (1 << i)) > 0)
+				{
+					swaps.addAll(customHotkeySwaps[i]);
+				}
+			}
+		}
+		int entryIndex = getEntryIndexToSwap(menuEntries, swaps);
 		if (entryIndex >= 0)
 		{
 			MenuEntry entryToSwap = menuEntries[entryIndex];

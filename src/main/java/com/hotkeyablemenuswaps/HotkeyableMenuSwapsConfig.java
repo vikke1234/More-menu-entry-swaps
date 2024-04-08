@@ -13,7 +13,7 @@ import static com.hotkeyablemenuswaps.OccultAltarSwap.*;
 @ConfigGroup("hotkeyablemenuswaps")
 public interface HotkeyableMenuSwapsConfig extends Config
 {
-	@ConfigSection(name = "Custom Swaps", description = "Text-based custom swaps", position = -10)
+	@ConfigSection(name = "Custom Swaps", description = "Text-based custom swaps", position = -110)
 	String customSwapsSection = "Custom Swaps";
 
 	@ConfigItem(
@@ -27,7 +27,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "";
 	}
 
-	@ConfigSection(name = "Custom Swaps (shift)", description = "Text-based custom swaps", position = -10)
+	@ConfigSection(name = "Custom Swaps (shift)", description = "Text-based custom swaps", position = -100)
 	String customShiftSwapsSection = "Custom Swaps (shift)";
 
 	@ConfigItem(
@@ -40,6 +40,30 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	default String customShiftSwaps() {
 		return "";
 	}
+
+	@ConfigSection(name = "Custom Swaps (hotkeys)", description = "Hotkey-based swaps.", position = -90, closedByDefault = true)
+	String hotkeys = "hotkeys";
+
+	@ConfigItem(keyName = "hotkey1", name = "hotkey 1", description = "", section = hotkeys, position = 0) default Keybind hotkey1() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey1Swaps", name = "", description = "", section = hotkeys, position = 1) default String hotkey1Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey2", name = "hotkey 2", description = "", section = hotkeys, position = 2) default Keybind hotkey2() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey2Swaps", name = "", description = "", section = hotkeys, position = 3) default String hotkey2Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey3", name = "hotkey 3", description = "", section = hotkeys, position = 4) default Keybind hotkey3() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey3Swaps", name = "", description = "", section = hotkeys, position = 5) default String hotkey3Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey4", name = "hotkey 4", description = "", section = hotkeys, position = 6) default Keybind hotkey4() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey4Swaps", name = "", description = "", section = hotkeys, position = 7) default String hotkey4Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey5", name = "hotkey 5", description = "", section = hotkeys, position = 8) default Keybind hotkey5() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey5Swaps", name = "", description = "", section = hotkeys, position = 9) default String hotkey5Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey6", name = "hotkey 6", description = "", section = hotkeys, position = 10) default Keybind hotkey6() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey6Swaps", name = "", description = "", section = hotkeys, position = 11) default String hotkey6Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey7", name = "hotkey 7", description = "", section = hotkeys, position = 12) default Keybind hotkey7() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey7Swaps", name = "", description = "", section = hotkeys, position = 13) default String hotkey7Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey8", name = "hotkey 8", description = "", section = hotkeys, position = 14) default Keybind hotkey8() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey8Swaps", name = "", description = "", section = hotkeys, position = 15) default String hotkey8Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey9", name = "hotkey 9", description = "", section = hotkeys, position = 16) default Keybind hotkey9() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey9Swaps", name = "", description = "", section = hotkeys, position = 17) default String hotkey9Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey10", name = "hotkey 10", description = "", section = hotkeys, position = 18) default Keybind hotkey10() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey10Swaps", name = "", description = "", section = hotkeys, position = 19) default String hotkey10Swaps() { return ""; }
 
 	@ConfigSection(name = "Custom Hides", description = "Text-based custom menu entry hides", position = -9)
 	String customHidesSection = "Custom Hides";
