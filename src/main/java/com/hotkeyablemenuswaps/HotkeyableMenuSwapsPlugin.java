@@ -564,25 +564,25 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (
 			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_EXTRA_OP
 			&& type == MenuAction.CC_OP && menuEntry.getIdentifier() == 1
-			&& (menuEntry.getOption().startsWith("Withdraw") || menuEntry.getOption().startsWith("Remove"))
 		) {
-			final int opId;
-			if (widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE || widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED)
-			{
-				opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
-			}
-			else
-			{
-				if (widgetGroupId == InterfaceID.SEED_VAULT) {
+			int opId = -1;
+			if (menuEntry.getOption().startsWith("Withdraw")) {
+				if (widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE || widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED) {
+					opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
+				} else if (widgetGroupId == InterfaceID.SEED_VAULT) {
 					opId = currentBankModeSwap.getIdentifierSeedVault();
-				} else if (isPriceChecker) {
-					opId = currentBankModeSwap.getPriceCheckerIdentifier();
 				} else {
 					opId = currentBankModeSwap.getWithdrawIdentifier();
 				}
+			} else if (isPriceChecker && menuEntry.getOption().startsWith("Remove")) {
+				opId = currentBankModeSwap.getPriceCheckerIdentifier();
 			}
-			bankModeSwap(opId);
-			return true;
+			
+			if (opId != -1)
+			{
+				bankModeSwap(opId);
+				return true;
+			}
 		}
 
 		return false;
