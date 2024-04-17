@@ -1343,6 +1343,11 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String topEntryTarget = Text.standardize(topEntry.getTarget());
 		for (MenuEntry entry : menuEntries)
 		{
+			MenuAction type = entry.getType();
+			if (type == RUNELITE_SUBMENU_WIDGET || type == RUNELITE_SUBMENU || entry.getParent() != null) {
+				filtered.add(entry);
+				continue;
+			}
 			// Skips applying custom hides to examine/cancel in PostMenuSwap, and to all other entries in MenuOpened.
 			if (examineCancelLateRemoval) {
 				boolean isExamineOrCancel = entry.getType() == MenuAction.CANCEL || entry.getOption().equals("Examine");
