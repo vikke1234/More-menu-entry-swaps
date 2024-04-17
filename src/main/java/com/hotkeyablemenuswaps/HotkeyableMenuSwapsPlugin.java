@@ -1331,9 +1331,6 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				}
 			}
 		}
-		if (type == GAME_OBJECT_FIFTH_OPTION) {
-			return client.getVarbitValue(2176) == 1; // in building mode.
-		}
 		return false;
 	}
 
