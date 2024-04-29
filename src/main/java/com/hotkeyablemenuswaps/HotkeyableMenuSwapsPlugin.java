@@ -106,16 +106,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	// If a hotkey corresponding to a swap is currently held, these variables will be non-null. currentBankModeSwap is an exception because it uses menu entry swapper's bank swap enum, which already has an "off" value.
 	// These variables do not factor in left-click swaps.
-	private volatile BankSwapMode currentBankModeSwap;
-	private volatile OccultAltarSwap hotkeyOccultAltarSwap;
-	private volatile TreeRingSwap hotkeyTreeRingSwap;
-	private volatile MaxCapeSwap hotkeyMaxCapeSwap;
-	private volatile BookOfTheDeadSwap hotkeyBOTDSwap;
-	private volatile boolean swapUse;
-	private volatile boolean swapJewelleryBox;
-	private volatile PortalNexusSwap swapPortalNexus;
-	private volatile PortalNexusXericsTalismanSwap swapPortalNexusXericsTalisman;
-	private volatile PortalNexusDigsitePendantSwap swapPortalNexusDigsitePendant;
+	private BankSwapMode currentBankModeSwap;
+	private OccultAltarSwap hotkeyOccultAltarSwap;
+	private TreeRingSwap hotkeyTreeRingSwap;
+	private MaxCapeSwap hotkeyMaxCapeSwap;
+	private BookOfTheDeadSwap hotkeyBOTDSwap;
+	private boolean swapUse;
+	private boolean swapJewelleryBox;
+	private PortalNexusSwap swapPortalNexus;
+	private PortalNexusXericsTalismanSwap swapPortalNexusXericsTalisman;
+	private PortalNexusDigsitePendantSwap swapPortalNexusDigsitePendant;
 
 	final List<CustomSwap> customSwaps = new ArrayList<>();
 	final List<CustomSwap>[] customHotkeySwaps = new List[HOTKEY_COUNT];
@@ -343,7 +343,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// not used.
 	}
 
-	private volatile int bankSwapVarbit = 0;
+	private int bankSwapVarbit = 0;
 
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
