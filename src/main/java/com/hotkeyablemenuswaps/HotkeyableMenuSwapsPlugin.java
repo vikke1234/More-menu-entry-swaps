@@ -122,7 +122,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	final List<CustomSwap> customShiftSwaps = new ArrayList<>();
 	final List<CustomSwap> customHides = new ArrayList<>();
 
-	private static final int HOTKEY_COUNT = 10;
+	private static final int HOTKEY_COUNT = 20;
 	private int hotkeys = 0; // bitfield.
 	private List<Keybind> customSwapKeybinds = new ArrayList<>();
 
