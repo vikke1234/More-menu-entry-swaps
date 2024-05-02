@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-enum BankSwapMode {
+enum BankSwapMode implements HotkeyableMenuSwapsPlugin.hasKeybind {
     OFF(ShiftDepositMode.OFF, ShiftWithdrawMode.OFF, config -> Keybind.NOT_SET),
     SWAP_1(ShiftDepositMode.DEPOSIT_1, ShiftWithdrawMode.WITHDRAW_1, HotkeyableMenuSwapsConfig::getBankSwap1Hotkey, 2, 1),
     SWAP_5(ShiftDepositMode.DEPOSIT_5, ShiftWithdrawMode.WITHDRAW_5, HotkeyableMenuSwapsConfig::getBankSwap5Hotkey, 3, 2),

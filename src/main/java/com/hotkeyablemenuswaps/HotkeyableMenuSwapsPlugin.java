@@ -40,7 +40,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -265,9 +267,19 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 //		}
 //	}
 //
+	private Map<Object, Keybind> keybindCache = new HashMap<>();
+
+	interface hasKeybind {
+		default Keybind getKeybind(HotkeyableMenuSwapsConfig config, Map<Object, Keybind> keybindCache) {
+			return keybindCache.computeIfAbsent(this, o -> getKeybind(config));
+		}
+
+		Keybind getKeybind(HotkeyableMenuSwapsConfig config);
+	}
+
 	@Getter
 	@AllArgsConstructor
-	public enum PortalNexusSwap {
+	public enum PortalNexusSwap implements hasKeybind {
 		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::portalNexusDestinationSwapHotKey),
 		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::portalNexusTeleportMenuSwapHotKey),
 		CONFIGURATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::portalNexusConfigurationSwapHotKey),
@@ -283,7 +295,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Getter
 	@AllArgsConstructor
-	public enum PortalNexusXericsTalismanSwap {
+	public enum PortalNexusXericsTalismanSwap implements hasKeybind {
 		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanDestination),
 		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanTeleportMenu),
 		CONFIGURATION(MenuAction.GAME_OBJECT_THIRD_OPTION, HotkeyableMenuSwapsConfig::pohXericsTalismanConfiguration),
@@ -299,7 +311,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 	@Getter
 	@AllArgsConstructor
-	public enum PortalNexusDigsitePendantSwap
+	public enum PortalNexusDigsitePendantSwap implements hasKeybind
 	{
 		DESTINATION(MenuAction.GAME_OBJECT_FIRST_OPTION, HotkeyableMenuSwapsConfig::pohDigsitePendantDestination),
 		TELEPORT_MENU(MenuAction.GAME_OBJECT_SECOND_OPTION, HotkeyableMenuSwapsConfig::pohDigsitePendantTeleportMenu),
@@ -368,56 +380,56 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		BankSwapMode currentLeftClick = bankSwapModes[bankSwapVarbit];
 
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
-			if (swapMode != currentLeftClick && (swapMode.getKeybind(config)).matches(e)) {
+			if (swapMode != currentLeftClick && (swapMode.getKeybind(config, keybindCache)).matches(e)) {
 				currentBankModeSwap = swapMode;
 				break;
 			}
 		}
 
 		for (OccultAltarSwap altarOption : OccultAltarSwap.values()) {
-			if ((altarOption.getKeybind(config)).matches(e)) {
+			if ((altarOption.getKeybind(config, keybindCache)).matches(e)) {
 				hotkeyOccultAltarSwap = altarOption;
 				break;
 			}
 		}
 
 		for (TreeRingSwap treeRingSwap : TreeRingSwap.values()) {
-			if ((treeRingSwap.getKeybind(config)).matches(e)) {
+			if ((treeRingSwap.getKeybind(config, keybindCache)).matches(e)) {
 				hotkeyTreeRingSwap = treeRingSwap;
 				break;
 			}
 		}
 
 		for (MaxCapeSwap maxCapeSwap : MaxCapeSwap.values()) {
-			if ((maxCapeSwap.getKeybind(config)).matches(e)) {
+			if ((maxCapeSwap.getKeybind(config, keybindCache)).matches(e)) {
 				hotkeyMaxCapeSwap = maxCapeSwap;
 				break;
 			}
 		}
 
 		for (BookOfTheDeadSwap botdSwap : BookOfTheDeadSwap.values()) {
-			if ((botdSwap.getKeybind(config)).matches(e)) {
+			if ((botdSwap.getKeybind(config, keybindCache)).matches(e)) {
 				hotkeyBOTDSwap = botdSwap;
 				break;
 			}
 		}
 
 		for (PortalNexusSwap option : PortalNexusSwap.values()) {
-			if ((option.getKeybind(config)).matches(e)) {
+			if ((option.getKeybind(config, keybindCache)).matches(e)) {
 				swapPortalNexus = option;
 				break;
 			}
 		}
 
 		for (PortalNexusXericsTalismanSwap option : PortalNexusXericsTalismanSwap.values()) {
-			if ((option.getKeybind(config)).matches(e)) {
+			if ((option.getKeybind(config, keybindCache)).matches(e)) {
 				swapPortalNexusXericsTalisman = option;
 				break;
 			}
 		}
 
 		for (PortalNexusDigsitePendantSwap option : PortalNexusDigsitePendantSwap.values()) {
-			if ((option.getKeybind(config)).matches(e)) {
+			if ((option.getKeybind(config, keybindCache)).matches(e)) {
 				swapPortalNexusDigsitePendant = option;
 				break;
 			}
@@ -442,56 +454,56 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
-			if ((swapMode.getKeybind(config)).matches(e) && swapMode == currentBankModeSwap) {
+			if ((swapMode.getKeybind(config, keybindCache)).matches(e) && swapMode == currentBankModeSwap) {
 				currentBankModeSwap = BankSwapMode.OFF;
 				break;
 			}
 		}
 
 		for (OccultAltarSwap altarOption : OccultAltarSwap.values()) {
-			if ((altarOption.getKeybind(config)).matches(e) && altarOption == hotkeyOccultAltarSwap) {
+			if ((altarOption.getKeybind(config, keybindCache)).matches(e) && altarOption == hotkeyOccultAltarSwap) {
 				hotkeyOccultAltarSwap = null;
 				break;
 			}
 		}
 
 		for (TreeRingSwap treeRingSwap : TreeRingSwap.values()) {
-			if ((treeRingSwap.getKeybind(config)).matches(e) && treeRingSwap == hotkeyTreeRingSwap) {
+			if ((treeRingSwap.getKeybind(config, keybindCache)).matches(e) && treeRingSwap == hotkeyTreeRingSwap) {
 				hotkeyTreeRingSwap = null;
 				break;
 			}
 		}
 
 		for (MaxCapeSwap maxCapeSwap : MaxCapeSwap.values()) {
-			if ((maxCapeSwap.getKeybind(config)).matches(e) && maxCapeSwap == hotkeyMaxCapeSwap) {
+			if ((maxCapeSwap.getKeybind(config, keybindCache)).matches(e) && maxCapeSwap == hotkeyMaxCapeSwap) {
 				hotkeyMaxCapeSwap = null;
 				break;
 			}
 		}
 
 		for (BookOfTheDeadSwap botdSwap : BookOfTheDeadSwap.values()) {
-			if ((botdSwap.getKeybind(config)).matches(e) && botdSwap == hotkeyBOTDSwap) {
+			if ((botdSwap.getKeybind(config, keybindCache)).matches(e) && botdSwap == hotkeyBOTDSwap) {
 				hotkeyBOTDSwap = null;
 				break;
 			}
 		}
 
 		for (PortalNexusSwap option : PortalNexusSwap.values()) {
-			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexus) {
+			if ((option.getKeybind(config, keybindCache)).matches(e) && option == swapPortalNexus) {
 				swapPortalNexus = null;
 				break;
 			}
 		}
 
 		for (PortalNexusXericsTalismanSwap option : PortalNexusXericsTalismanSwap.values()) {
-			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexusXericsTalisman) {
+			if ((option.getKeybind(config, keybindCache)).matches(e) && option == swapPortalNexusXericsTalisman) {
 				swapPortalNexusXericsTalisman = null;
 				break;
 			}
 		}
 
 		for (PortalNexusDigsitePendantSwap option : PortalNexusDigsitePendantSwap.values()) {
-			if ((option.getKeybind(config)).matches(e) && option == swapPortalNexusDigsitePendant) {
+			if ((option.getKeybind(config, keybindCache)).matches(e) && option == swapPortalNexusDigsitePendant) {
 				swapPortalNexusDigsitePendant = null;
 				break;
 			}
@@ -1170,6 +1182,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Subscribe
 	public void onConfigChanged(ConfigChanged configChanged) {
 		if (configChanged.getGroup().equals("hotkeyablemenuswaps")) {
+			keybindCache.clear();
 			reloadCustomSwaps();
 			reloadGroundItemSort();
 			examineCancelLateRemoval = config.examineCancelLateRemoval();

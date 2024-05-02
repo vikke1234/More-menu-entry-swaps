@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-enum BookOfTheDeadSwap {
+enum BookOfTheDeadSwap implements HotkeyableMenuSwapsPlugin.hasKeybind {
     HOSIDIUS("lunch by the lancalliums", HotkeyableMenuSwapsConfig::botdHosidiusHotKey),
     PISCARILIUS("the fisher's flute", HotkeyableMenuSwapsConfig::botdPiscariliusHotKey),
     SHAYZEIN("history and hearsay", HotkeyableMenuSwapsConfig::botdShayzeinHotKey),

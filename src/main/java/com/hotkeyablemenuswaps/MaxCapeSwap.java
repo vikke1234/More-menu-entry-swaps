@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-enum MaxCapeSwap {
+enum MaxCapeSwap implements HotkeyableMenuSwapsPlugin.hasKeybind {
     CRAFTING_GUILD("crafting guild", HotkeyableMenuSwapsConfig::maxCapeCraftingGuildSwapHotKey),
     WARRIORS_GUILD("warriors' guild", HotkeyableMenuSwapsConfig::maxCapeWarriorsGuildSwapHotKey),
     TELE_POH("tele to poh", HotkeyableMenuSwapsConfig::maxCapeTelePOHSwapHotKey),

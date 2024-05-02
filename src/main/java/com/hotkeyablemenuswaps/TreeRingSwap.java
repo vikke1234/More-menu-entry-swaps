@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-enum TreeRingSwap {
+enum TreeRingSwap implements HotkeyableMenuSwapsPlugin.hasKeybind {
     TREE("tree", HotkeyableMenuSwapsConfig::getSwapTreeHotkey),
     ZANARIS("zanaris", HotkeyableMenuSwapsConfig::getSwapZanarisHotkey),
     LAST_DESTINATION("last-destination", HotkeyableMenuSwapsConfig::getSwapLastDestinationHotkey),

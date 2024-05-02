@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 @Getter
 @RequiredArgsConstructor
-enum OccultAltarSwap {
+enum OccultAltarSwap implements HotkeyableMenuSwapsPlugin.hasKeybind {
     VENERATE("venerate", "Cast", HotkeyableMenuSwapsConfig::getSwapVenerateHotkey),
     STANDARD("standard", "Standard", HotkeyableMenuSwapsConfig::getSwapStandardHotkey),
     ANCIENT("ancient", "Ancient", HotkeyableMenuSwapsConfig::getSwapAncientHotkey),
