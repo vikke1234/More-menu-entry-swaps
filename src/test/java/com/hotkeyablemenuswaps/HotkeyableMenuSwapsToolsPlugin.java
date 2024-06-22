@@ -7,6 +7,7 @@ import net.runelite.api.Client;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.CommandExecuted;
+import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -47,6 +48,15 @@ public class HotkeyableMenuSwapsToolsPlugin extends Plugin
 
 	@Inject
 	private Client client;
+
+	@Subscribe public void onMenuOpened(MenuOpened e) {
+		System.out.println("===menu opened===");
+		for (int i = client.getMenuEntries().length - 1; i >= 0; i--)
+		{
+			MenuEntry menuEntry = client.getMenuEntries()[i];
+			System.out.println(menuEntry.getOption() + " " + menuEntry.getTarget() + " " + menuEntry.getType() + " " + menuEntry.getIdentifier());
+		}
+	}
 
 	@Subscribe(priority = -2) // This will run after our swaps.
 	public void onClientTick(ClientTick clientTick) {

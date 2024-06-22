@@ -64,6 +64,7 @@ import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
@@ -107,6 +108,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	// If a hotkey corresponding to a swap is currently held, these variables will be non-null. currentBankModeSwap is an exception because it uses menu entry swapper's bank swap enum, which already has an "off" value.
 	// These variables do not factor in left-click swaps.
 	private BankSwapMode currentBankModeSwap;
+	private BankSwapMode currentNonBankModeSwap;
 	private OccultAltarSwap hotkeyOccultAltarSwap;
 	private TreeRingSwap hotkeyTreeRingSwap;
 	private MaxCapeSwap hotkeyMaxCapeSwap;
@@ -377,12 +379,15 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// ignoring the current left click option allows one keybind to be used for two different swaps - e.g. the
 		// same keybind for both "1" and "all", which makes bank-1 accessible while the left-click option is set
 		// to "all" via the vanilla bank interface, without requiring an additional keybind.
+		// Currently only applies to the bank.
 		BankSwapMode currentLeftClick = bankSwapModes[bankSwapVarbit];
 
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
-			if (swapMode != currentLeftClick && (swapMode.getKeybind(config, keybindCache)).matches(e)) {
-				currentBankModeSwap = swapMode;
-				break;
+			if ((swapMode.getKeybind(config, keybindCache)).matches(e)) {
+				if (swapMode != currentLeftClick) {
+					currentBankModeSwap = swapMode;
+				}
+				currentNonBankModeSwap = swapMode;
 			}
 		}
 
@@ -454,9 +459,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		for (BankSwapMode swapMode : BankSwapMode.values()) {
-			if ((swapMode.getKeybind(config, keybindCache)).matches(e) && swapMode == currentBankModeSwap) {
-				currentBankModeSwap = BankSwapMode.OFF;
-				break;
+			boolean matchesBankMode = swapMode == currentBankModeSwap;
+			boolean matchesNonBankMode = swapMode == currentNonBankModeSwap;
+			if (!matchesBankMode && !matchesNonBankMode) continue;
+			if ((swapMode.getKeybind(config, keybindCache)).matches(e)) {
+				if (matchesBankMode) {
+					currentBankModeSwap = BankSwapMode.OFF;
+				}
+				if (matchesNonBankMode) {
+					currentNonBankModeSwap = BankSwapMode.OFF;
+				}
 			}
 		}
 
@@ -530,6 +542,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private void resetHotkeys()
 	{
 		currentBankModeSwap = BankSwapMode.OFF;
+		currentNonBankModeSwap = BankSwapMode.OFF;
 		hotkeyOccultAltarSwap = null;
 		hotkeyTreeRingSwap = null;
 		hotkeyMaxCapeSwap = null;
@@ -542,8 +555,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
-	private boolean swapBank(MenuEntry menuEntry, MenuAction type)
+	private boolean swapBank(MenuEntry menuEntry, BankSwapMode mode)
 	{
+		MenuAction type = menuEntry.getType();
 		if (type != MenuAction.CC_OP && type != MenuAction.CC_OP_LOW_PRIORITY)
 		{
 			return false;
@@ -557,37 +571,32 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x for deposit box interface and chambers of xeric storage unit.
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
 		if (
-			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_ALL_BUT_1
-			&& type == MenuAction.CC_OP
-			&& menuEntry.getIdentifier() == (isDepositBoxPlayerInventory || isGroupStoragePlayerInventory || isChambersOfXericStorageUnitPlayerInventory || isPriceChecker ? 1 : 2)
+			mode != BankSwapMode.SWAP_ALL_BUT_1
 			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate") || menuEntry.getOption().startsWith("Add"))
 		) {
-			final int opId = isDepositBoxPlayerInventory ? currentBankModeSwap.getDepositIdentifierDepositBox()
-				: isChambersOfXericStorageUnitPlayerInventory ? currentBankModeSwap.getDepositIdentifierChambersStorageUnit()
-				: isGroupStoragePlayerInventory ? currentBankModeSwap.getDepositIdentifierGroupStorage()
-				: widgetGroupId == InterfaceID.SEED_VAULT_INVENTORY ? currentBankModeSwap.getIdentifierSeedVault()
-				: isPriceChecker ? currentBankModeSwap.getPriceCheckerIdentifier()
-				: currentBankModeSwap.getDepositIdentifier();
+			final int opId = isDepositBoxPlayerInventory ? mode.getDepositIdentifierDepositBox()
+				: isChambersOfXericStorageUnitPlayerInventory ? mode.getDepositIdentifierChambersStorageUnit()
+				: isGroupStoragePlayerInventory ? mode.getDepositIdentifierGroupStorage()
+				: widgetGroupId == InterfaceID.SEED_VAULT_INVENTORY ? mode.getIdentifierSeedVault()
+				: isPriceChecker ? mode.getPriceCheckerIdentifier()
+				: mode.getDepositIdentifier();
 			bankModeSwap(opId);
 			return true;
 		}
 
 		// Deposit- op 1 is the current withdraw amount 1/5/10/x
-		if (
-			currentBankModeSwap != BankSwapMode.OFF && currentBankModeSwap != BankSwapMode.SWAP_EXTRA_OP
-			&& type == MenuAction.CC_OP && menuEntry.getIdentifier() == 1
-		) {
+		if (mode != BankSwapMode.SWAP_EXTRA_OP) {
 			int opId = -1;
 			if (menuEntry.getOption().startsWith("Withdraw")) {
 				if (widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_PRIVATE || widgetGroupId == InterfaceID.CHAMBERS_OF_XERIC_STORAGE_UNIT_SHARED) {
-					opId = currentBankModeSwap.getWithdrawIdentifierChambersStorageUnit();
+					opId = mode.getWithdrawIdentifierChambersStorageUnit();
 				} else if (widgetGroupId == InterfaceID.SEED_VAULT) {
-					opId = currentBankModeSwap.getIdentifierSeedVault();
+					opId = mode.getIdentifierSeedVault();
 				} else {
-					opId = currentBankModeSwap.getWithdrawIdentifier();
+					opId = mode.getWithdrawIdentifier();
 				}
 			} else if (isPriceChecker && menuEntry.getOption().startsWith("Remove")) {
-				opId = currentBankModeSwap.getPriceCheckerIdentifier();
+				opId = mode.getPriceCheckerIdentifier();
 			}
 			
 			if (opId != -1)
@@ -736,6 +745,16 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			optionIndexes.put(option, idx++);
 		}
 
+		boolean bankOpen = client.getWidget(ComponentID.BANK_CONTAINER) != null;
+		BankSwapMode mode = bankOpen ? currentBankModeSwap : currentNonBankModeSwap;
+		if (mode != BankSwapMode.OFF)
+		{
+			for (int i = menuEntries.length - 1; i >= 0; i--)
+			{
+				if (swapBank(menuEntries[i], mode)) return;
+			}
+		}
+
 		// Perform swaps
 		for (int i = 0; i < menuEntries.length; i++)
 		{
@@ -858,11 +877,6 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String option = Text.removeTags(menuEntry.getOption()).toLowerCase();
 		String target = Text.removeTags(menuEntry.getTarget()).toLowerCase();
 		MenuAction menuAction = menuEntry.getType();
-
-		if (swapBank(menuEntry, menuAction))
-		{
-			return;
-		}
 
 		if (menuAction == WIDGET_TARGET)
 		{
