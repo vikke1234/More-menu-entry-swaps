@@ -558,7 +558,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private boolean swapBank(MenuEntry menuEntry, BankSwapMode mode)
 	{
 		MenuAction type = menuEntry.getType();
-		if (type != MenuAction.CC_OP && type != MenuAction.CC_OP_LOW_PRIORITY)
+		if (type != MenuAction.CC_OP)
 		{
 			return false;
 		}
@@ -572,7 +572,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// Deposit- op 2 is the current withdraw amount 1/5/10/x for bank interface
 		if (
 			mode != BankSwapMode.SWAP_ALL_BUT_1
-			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate") || menuEntry.getOption().startsWith("Add"))
+			&& (menuEntry.getOption().startsWith("Deposit-") || menuEntry.getOption().startsWith("Store") || menuEntry.getOption().startsWith("Donate") || (isPriceChecker && menuEntry.getOption().startsWith("Add")))
 		) {
 			final int opId = isDepositBoxPlayerInventory ? mode.getDepositIdentifierDepositBox()
 				: isChambersOfXericStorageUnitPlayerInventory ? mode.getDepositIdentifierChambersStorageUnit()
