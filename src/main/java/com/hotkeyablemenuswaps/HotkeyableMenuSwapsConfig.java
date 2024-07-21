@@ -13,7 +13,7 @@ import static com.hotkeyablemenuswaps.OccultAltarSwap.*;
 @ConfigGroup("hotkeyablemenuswaps")
 public interface HotkeyableMenuSwapsConfig extends Config
 {
-	@ConfigSection(name = "Custom Swaps", description = "Text-based custom swaps", position = -110)
+	@ConfigSection(name = "Custom Swaps", description = "Text-based custom swaps", position = -110, closedByDefault = true)
 	String customSwapsSection = "Custom Swaps";
 
 	@ConfigItem(
@@ -27,7 +27,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "";
 	}
 
-	@ConfigSection(name = "Custom Swaps (shift)", description = "Text-based custom swaps", position = -100)
+	@ConfigSection(name = "Custom Swaps (shift)", description = "Text-based custom swaps", position = -100, closedByDefault = true)
 	String customShiftSwapsSection = "Custom Swaps (shift)";
 
 	@ConfigItem(
@@ -125,7 +125,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(keyName = "hotkey40", name = "hotkey 40", description = "", section = hotkeys, position = 78) default Keybind hotkey40() { return Keybind.NOT_SET; }
 	@ConfigItem(keyName = "hotkey40Swaps", name = "", description = "", section = hotkeys, position = 79) default String hotkey40Swaps() { return ""; }
 
-	@ConfigSection(name = "Custom Hides", description = "Text-based custom menu entry hides", position = -9)
+	@ConfigSection(name = "Custom Hides", description = "Text-based custom menu entry hides", position = -9, closedByDefault = true)
 	String customHidesSection = "Custom Hides";
 
 	@ConfigItem(
@@ -179,7 +179,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return true;
 	}
 
-	@ConfigSection(name = "Ground Item Sort", description = "", position = -8)
+	@ConfigSection(name = "Ground Item Sort", description = "", position = -8, closedByDefault = true)
 	String groundItemSortSection = "Ground Item Sort";
 
 	@ConfigItem(
@@ -674,23 +674,23 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return Keybind.NOT_SET;
 	}
 
-
-
 	@ConfigSection(
-		name = "Max Cape (equipped)",
-		description = "Max Cape hotkeys",
+		name = "Old options",
+		description = "Old options that aren't very useful anymore.",
 		position = 6,
 		closedByDefault = true
 	)
-	String maxCapeSection = "maxCape";
+	String oldOptionsSection = "oldOptions";
+
+	@ConfigItem(name = "Max Cape (equipped)",
+		keyName = "oldHeading1", description = "", section = oldOptionsSection, position = 0)
+	default void oldHeading1() {}
 
 	@ConfigItem(
 		keyName = "maxCapeCraftingGuildSwapHotKey",
 		name = "Crafting Guild",
 		description = "",
-		section = maxCapeSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 1)
 	default Keybind maxCapeCraftingGuildSwapHotKey()
 	{
 		return Keybind.NOT_SET;
@@ -700,9 +700,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "maxCapeWarriorsGuildSwapHotKey", 
 		name = "Warriors Guild",
 		description = "",
-		section = maxCapeSection,
-		position = 1
-		)
+		section = oldOptionsSection, position = 2)
 	default Keybind maxCapeWarriorsGuildSwapHotKey() {
 		return Keybind.NOT_SET;
 	}
@@ -711,30 +709,20 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "maxCapeTelePOHSwapHotKey", 
 		name = "Tele to POH",
 		description = "",
-		section = maxCapeSection,
-		position = 2
-		)
+		section = oldOptionsSection, position = 3)
 	default Keybind maxCapeTelePOHSwapHotKey() {
 		return Keybind.NOT_SET;
 	}
 
-
-
-	@ConfigSection(
-		name = "Book of the dead (equipped)",
-		description = "Book of the dead hotkeys",
-		position = 7,
-		closedByDefault = true
-	)
-	String botdSection = "botd";
+	@ConfigItem(name = "Book of the dead (equipped)",
+		keyName = "oldHeading2", description = "", section = oldOptionsSection, position = 4)
+	default void oldHeading2() {}
 
 	@ConfigItem(
 		keyName = "botdHosidiusHotKey",
 		name = "Hosidius",
 		description = "",
-		section = botdSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 5)
 	default Keybind botdHosidiusHotKey()
 	{
 		return Keybind.NOT_SET;
@@ -744,9 +732,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "botdPiscariliusHotKey",
 		name = "Piscarilius",
 		description = "",
-		section = botdSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 6)
 	default Keybind botdPiscariliusHotKey()
 	{
 		return Keybind.NOT_SET;
@@ -756,9 +742,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "botdShayzeinHotKey",
 		name = "Shayzein",
 		description = "",
-		section = botdSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 7)
 	default Keybind botdShayzeinHotKey()
 	{
 		return Keybind.NOT_SET;
@@ -768,9 +752,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "botdLovakengjHotKey",
 		name = "Lovakengj",
 		description = "",
-		section = botdSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 8)
 	default Keybind botdLovakengjHotKey()
 	{
 		return Keybind.NOT_SET;
@@ -780,9 +762,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "botdArceuusHotKey",
 		name = "Arceuus",
 		description = "",
-		section = botdSection,
-		position = 0
-	)
+		section = oldOptionsSection, position = 9)
 	default Keybind botdArceuusHotKey()
 	{
 		return Keybind.NOT_SET;
