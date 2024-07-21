@@ -84,6 +84,46 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(keyName = "hotkey19Swaps", name = "", description = "", section = hotkeys, position = 37) default String hotkey19Swaps() { return ""; }
 	@ConfigItem(keyName = "hotkey20", name = "hotkey 20", description = "", section = hotkeys, position = 38) default Keybind hotkey20() { return Keybind.NOT_SET; }
 	@ConfigItem(keyName = "hotkey20Swaps", name = "", description = "", section = hotkeys, position = 39) default String hotkey20Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey21", name = "hotkey 21", description = "", section = hotkeys, position = 40) default Keybind hotkey21() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey21Swaps", name = "", description = "", section = hotkeys, position = 41) default String hotkey21Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey22", name = "hotkey 22", description = "", section = hotkeys, position = 42) default Keybind hotkey22() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey22Swaps", name = "", description = "", section = hotkeys, position = 43) default String hotkey22Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey23", name = "hotkey 23", description = "", section = hotkeys, position = 44) default Keybind hotkey23() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey23Swaps", name = "", description = "", section = hotkeys, position = 45) default String hotkey23Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey24", name = "hotkey 24", description = "", section = hotkeys, position = 46) default Keybind hotkey24() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey24Swaps", name = "", description = "", section = hotkeys, position = 47) default String hotkey24Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey25", name = "hotkey 25", description = "", section = hotkeys, position = 48) default Keybind hotkey25() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey25Swaps", name = "", description = "", section = hotkeys, position = 49) default String hotkey25Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey26", name = "hotkey 26", description = "", section = hotkeys, position = 50) default Keybind hotkey26() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey26Swaps", name = "", description = "", section = hotkeys, position = 51) default String hotkey26Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey27", name = "hotkey 27", description = "", section = hotkeys, position = 52) default Keybind hotkey27() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey27Swaps", name = "", description = "", section = hotkeys, position = 53) default String hotkey27Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey28", name = "hotkey 28", description = "", section = hotkeys, position = 54) default Keybind hotkey28() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey28Swaps", name = "", description = "", section = hotkeys, position = 55) default String hotkey28Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey29", name = "hotkey 29", description = "", section = hotkeys, position = 56) default Keybind hotkey29() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey29Swaps", name = "", description = "", section = hotkeys, position = 57) default String hotkey29Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey30", name = "hotkey 30", description = "", section = hotkeys, position = 58) default Keybind hotkey30() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey30Swaps", name = "", description = "", section = hotkeys, position = 59) default String hotkey30Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey31", name = "hotkey 31", description = "", section = hotkeys, position = 60) default Keybind hotkey31() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey31Swaps", name = "", description = "", section = hotkeys, position = 61) default String hotkey31Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey32", name = "hotkey 32", description = "", section = hotkeys, position = 62) default Keybind hotkey32() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey32Swaps", name = "", description = "", section = hotkeys, position = 63) default String hotkey32Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey33", name = "hotkey 33", description = "", section = hotkeys, position = 64) default Keybind hotkey33() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey33Swaps", name = "", description = "", section = hotkeys, position = 65) default String hotkey33Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey34", name = "hotkey 34", description = "", section = hotkeys, position = 66) default Keybind hotkey34() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey34Swaps", name = "", description = "", section = hotkeys, position = 67) default String hotkey34Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey35", name = "hotkey 35", description = "", section = hotkeys, position = 68) default Keybind hotkey35() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey35Swaps", name = "", description = "", section = hotkeys, position = 69) default String hotkey35Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey36", name = "hotkey 36", description = "", section = hotkeys, position = 70) default Keybind hotkey36() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey36Swaps", name = "", description = "", section = hotkeys, position = 71) default String hotkey36Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey37", name = "hotkey 37", description = "", section = hotkeys, position = 72) default Keybind hotkey37() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey37Swaps", name = "", description = "", section = hotkeys, position = 73) default String hotkey37Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey38", name = "hotkey 38", description = "", section = hotkeys, position = 74) default Keybind hotkey38() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey38Swaps", name = "", description = "", section = hotkeys, position = 75) default String hotkey38Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey39", name = "hotkey 39", description = "", section = hotkeys, position = 76) default Keybind hotkey39() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey39Swaps", name = "", description = "", section = hotkeys, position = 77) default String hotkey39Swaps() { return ""; }
+	@ConfigItem(keyName = "hotkey40", name = "hotkey 40", description = "", section = hotkeys, position = 78) default Keybind hotkey40() { return Keybind.NOT_SET; }
+	@ConfigItem(keyName = "hotkey40Swaps", name = "", description = "", section = hotkeys, position = 79) default String hotkey40Swaps() { return ""; }
 
 	@ConfigSection(name = "Custom Hides", description = "Text-based custom menu entry hides", position = -9)
 	String customHidesSection = "Custom Hides";

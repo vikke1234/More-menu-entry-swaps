@@ -124,8 +124,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	final List<CustomSwap> customShiftSwaps = new ArrayList<>();
 	final List<CustomSwap> customHides = new ArrayList<>();
 
-	private static final int HOTKEY_COUNT = 20;
-	private int hotkeys = 0; // bitfield.
+	private static final int HOTKEY_COUNT = 40;
+	private long hotkeys = 0; // bitfield.
 	private List<Keybind> customSwapKeybinds = new ArrayList<>();
 
 	// Mirrors config field. This field is read quite often so doing this might be good for performance.
@@ -372,7 +372,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	{
 		for (int i = 0; i < customSwapKeybinds.size(); i++) {
 			if (customSwapKeybinds.get(i).matches(e)) {
-				hotkeys |= 1 << i;
+				hotkeys |= 1L << i;
 			}
 		}
 
@@ -454,7 +454,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	{
 		for (int i = 0; i < customSwapKeybinds.size(); i++) {
 			if (customSwapKeybinds.get(i).matches(e)) {
-				hotkeys &= ~(1 << i);
+				hotkeys &= ~(1L << i);
 			}
 		}
 
@@ -1266,7 +1266,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			swaps.addAll(temp);
 			for (int i = 0; i < HOTKEY_COUNT; i++)
 			{
-				if ((hotkeys & (1 << i)) > 0)
+				if ((hotkeys & (1L << i)) > 0)
 				{
 					swaps.addAll(customHotkeySwaps[i]);
 				}
