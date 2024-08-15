@@ -1384,7 +1384,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			String option = Text.standardize(entry.getOption());
 			String target = Text.standardize(entry.getTarget());
 			int swapIndex = matches(option, target, topEntryOption, topEntryTarget, swaps);
-			if (swapIndex > latestMatchingSwapIndex)
+			if (swapIndex >= latestMatchingSwapIndex)
 			{
 				bestMenuEntryIndex = menuIterator.index;
 				bestMenuEntrySubmenuIndex = menuIterator.submenuIndex;
