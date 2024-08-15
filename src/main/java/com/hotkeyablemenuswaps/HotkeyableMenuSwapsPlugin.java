@@ -734,38 +734,52 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		mesPluginStyleSwaps(menuEntries);
 	}
 
-	private void maxCapeMenu() {
-		Menu menu = client.getMenu();
-		// Get max cape teleport entry, if missing do nothing
-		MenuEntry me = Arrays.stream(menu.getMenuEntries())
-				.filter(entry -> entry.getOption().equals("Teleports") && entry.getItemId() == ItemID.MAX_CAPE)
-				.findFirst()
-				.orElse(null);
-		if (me == null) {
-			return;
-		}
+	private void createMaxCapeMenu(Menu menu, MenuEntry menuEntry) {
 		// Filter out any invalid entries, case-insensitive
 		List<String> strEntries = Arrays.stream(config.maxCapeMenus().toLowerCase().strip().split("\n"))
 				.filter(MaxCapeTeleports::isValid).collect(Collectors.toList());
 		List<MaxCapeTeleports> teleports = strEntries.stream()
-				.map(MaxCapeTeleports::getTeleport).collect(Collectors.toList());
+				.map(MaxCapeTeleports::getTeleport)
+				.filter(entry -> menuEntry.getOption().equals(entry.getOption()))
+				.collect(Collectors.toList());
 
 		int offset = menu.getMenuEntries().length - 1;
 		for (MaxCapeTeleports teleport : teleports) {
 			menu.createMenuEntry(offset)
 					.setOption(teleport.toString())
-					.setTarget(me.getTarget())
-					.setParam0(me.getParam0())
-					.setParam1(me.getParam1())
+					.setTarget(menuEntry.getTarget())
+					.setParam0(menuEntry.getParam0())
+					.setParam1(menuEntry.getParam1())
 					.setType(RUNELITE)
 					.onClick(e -> clientThread.invokeLater(() -> {
-						client.menuAction(me.getParam0(), me.getParam1(), CC_OP,
-								me.getIdentifier(), me.getItemId(), me.getOption(), me.getTarget());
+						client.menuAction(menuEntry.getParam0(), menuEntry.getParam1(), CC_OP,
+								menuEntry.getIdentifier(), menuEntry.getItemId(), menuEntry.getOption(), menuEntry.getTarget());
 						for (int op : teleport.getOps()) {
 							pauseresume(teleport.getId(), op);
 						}
 					}));
 		}
+	}
+
+	private void maxCapeMenu() {
+		Menu menu = client.getMenu();
+		// Get max cape teleport entry, if missing do nothing
+		MenuEntry teleportMenu = Arrays.stream(menu.getMenuEntries())
+				.filter(entry -> entry.getOption().equals("Teleports") && entry.getItemId() == ItemID.MAX_CAPE)
+				.findFirst()
+				.orElse(null);
+		MenuEntry featureMenu = Arrays.stream(menu.getMenuEntries())
+				.filter(entry -> entry.getOption().equals("Features") && entry.getItemId() == ItemID.MAX_CAPE)
+				.findFirst()
+				.orElse(null);
+
+		if (teleportMenu != null) {
+			createMaxCapeMenu(menu, teleportMenu);
+		}
+		if (featureMenu != null) {
+			createMaxCapeMenu(menu, featureMenu);
+		}
+
 	}
 
 	private void pauseresume(@Component int comp, int op)
