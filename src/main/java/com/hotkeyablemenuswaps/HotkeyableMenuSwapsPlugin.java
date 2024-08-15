@@ -36,17 +36,13 @@ import static com.hotkeyablemenuswaps.GroundItemPriceSortMode.DISABLED;
 import com.hotkeyablemenuswaps.GroundItemsStuff.GroundItem;
 import com.hotkeyablemenuswaps.GroundItemsStuff.NamedQuantity;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import com.hotkeyablemenuswaps.enums.MaxCapeTeleports;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -54,13 +50,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.KeyCode;
-import net.runelite.api.Menu;
-import net.runelite.api.MenuAction;
+import net.runelite.api.*;
+
 import static net.runelite.api.MenuAction.*;
-import net.runelite.api.MenuEntry;
+
+import net.runelite.api.annotations.Component;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.MenuOpened;
@@ -70,6 +64,7 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.config.RuneLiteConfig;
@@ -101,6 +96,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 {
 	@Inject private Client client;
+	@Inject private ClientThread clientThread;
 	@Inject private HotkeyableMenuSwapsConfig config;
 	@Inject private KeyManager keyManager;
 	@Inject private ConfigManager configManager;
@@ -728,13 +724,53 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		sortGroundItems();
 		customSwaps();
 
-		MenuEntry[] menuEntries = client.getMenuEntries();
+		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
 
 		if (menuEntries.length == 0) return;
 
 		spellbookSwapSwaps(menuEntries);
+		maxCapeMenu();
 
 		mesPluginStyleSwaps(menuEntries);
+	}
+
+	private void maxCapeMenu() {
+		Menu menu = client.getMenu();
+		// Get max cape teleport entry, if missing do nothing
+		MenuEntry me = Arrays.stream(menu.getMenuEntries())
+				.filter(entry -> entry.getOption().equals("Teleports") && entry.getItemId() == ItemID.MAX_CAPE)
+				.findFirst()
+				.orElse(null);
+		if (me == null) {
+			return;
+		}
+		// Filter out any invalid entries, case-insensitive
+		List<String> strEntries = Arrays.stream(config.maxCapeMenus().toLowerCase().strip().split("\n"))
+				.filter(MaxCapeTeleports::isValid).collect(Collectors.toList());
+		List<MaxCapeTeleports> teleports = strEntries.stream()
+				.map(MaxCapeTeleports::getTeleport).collect(Collectors.toList());
+
+		int offset = menu.getMenuEntries().length - 1;
+		for (MaxCapeTeleports teleport : teleports) {
+			menu.createMenuEntry(offset)
+					.setOption(teleport.toString())
+					.setTarget(me.getTarget())
+					.setParam0(me.getParam0())
+					.setParam1(me.getParam1())
+					.setType(RUNELITE)
+					.onClick(e -> clientThread.invokeLater(() -> {
+						client.menuAction(me.getParam0(), me.getParam1(), CC_OP,
+								me.getIdentifier(), me.getItemId(), me.getOption(), me.getTarget());
+						for (int op : teleport.getOps()) {
+							pauseresume(teleport.getId(), op);
+						}
+					}));
+		}
+	}
+
+	private void pauseresume(@Component int comp, int op)
+	{
+		client.menuAction(op, comp, MenuAction.WIDGET_CONTINUE, -1, -1, "", "");
 	}
 
 	private void mesPluginStyleSwaps(MenuEntry[] menuEntries)
