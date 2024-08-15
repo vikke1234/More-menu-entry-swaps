@@ -1,5 +1,6 @@
 package com.hotkeyablemenuswaps;
 
+import com.hotkeyablemenuswaps.enums.MaxCapeTeleports;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.client.config.Config;
@@ -151,6 +152,23 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	)
 	default String customSwapperInstructions() {
 		return "https://github.com/geheur/More-menu-entry-swaps/wiki/Custom-swaps";
+	}
+
+	@ConfigSection(name = "Max Cape Menus", description = "", position = -7, closedByDefault = true)
+	String maxCapeMenus = "Max Cape Menus";
+	@ConfigItem(
+			keyName = "maxCapeSwaps",
+			name = "Max Cape Swaps",
+			description = "Max cape entries to bring out of the menu. NOTE: needs accents, reset to defaults if you can't spell.",
+			section = maxCapeMenus,
+			position = 2
+	)
+	default String maxCapeMenus() {
+		StringBuilder builder = new StringBuilder();
+		for (MaxCapeTeleports teleport : MaxCapeTeleports.values()) {
+			builder.append("/" + teleport.toString() + "\n");
+		}
+		return builder.toString();
 	}
 
 	@ConfigSection(name = "Advanced", description = "Advanced options", position = -6, closedByDefault = true)
