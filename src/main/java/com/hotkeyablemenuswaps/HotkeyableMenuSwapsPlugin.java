@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -56,6 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.KeyCode;
+import net.runelite.api.Menu;
 import net.runelite.api.MenuAction;
 import static net.runelite.api.MenuAction.*;
 import net.runelite.api.MenuEntry;
@@ -83,6 +85,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperConfig;
 import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperPlugin;
 import net.runelite.client.util.Text;
+import org.apache.commons.lang3.tuple.Pair;
 
 // TODO when you press a key, then press and release a different key, the original key is no longer used for the keybind.
 // Also, modifier keys cannot be activated if they are pressed when the client does not have focus, which is annoying.
@@ -1248,9 +1251,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (menuEntries.length == 0) return;
 
 		menuEntries = filterEntries(menuEntries, false);
+		client.setMenuEntries(menuEntries);
 		int topEntryIndex = menuEntries.length - 1;
 		if (topEntryIndex == -1) { // The filtering removed all the menu options. No swaps can happen, so return early.
-			client.setMenuEntries(menuEntries);
 			return;
 		}
 		MenuEntry topEntry = menuEntries[topEntryIndex];
@@ -1272,19 +1275,32 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				}
 			}
 		}
-		int entryIndex = getEntryIndexToSwap(menuEntries, swaps);
-		if (entryIndex >= 0)
+		var p = getEntryIndexToSwap(menuEntries, swaps);
+		int index = p.getLeft();
+		int submenuIndex = p.getRight();
+		if (index >= 0)
 		{
-			MenuEntry entryToSwap = menuEntries[entryIndex];
+			MenuEntry entryToSwap = submenuIndex != -1
+				? menuEntries[index].getSubMenu().getMenuEntries()[submenuIndex]
+				: menuEntries[index];
 			if (isProtected(topEntry) || isProtected(entryToSwap)) {
 				return;
 			}
 
 			boolean doNotSwapOverMinimapOrbs = topEntry.getWidget() != null && WidgetUtil.componentToInterface(topEntry.getWidget().getId()) == 160 && entryToSwap.getWidget() == null && config.doNotSwapOverMinimapOrbs();
-			if (!doNotSwapOverMinimapOrbs && topEntryIndex > entryIndex) {
-				menuEntries[topEntryIndex] = entryToSwap;
-				menuEntries[entryIndex] = topEntry;
-				menuEntries[topEntryIndex].setParent(null); // Necessary if it's part of a submenu.
+			if (!doNotSwapOverMinimapOrbs && (topEntryIndex > index || submenuIndex != -1)) {
+				if (submenuIndex != -1) {
+//					Menu submenu = menuEntries[index].getSubMenu();
+//					MenuEntry[] entries = submenu.getMenuEntries();
+//					entryToSwap = entries[submenuIndex];
+//					entries[submenuIndex] = topEntry;
+//					submenu.setMenuEntries(entries);
+					client.getMenu().createMenuEntry(-1).setOption(entryToSwap.getOption()).setTarget(entryToSwap.getTarget()).onClick(entryToSwap.onClick());
+				} else {
+					menuEntries[index] = topEntry;
+					menuEntries[topEntryIndex] = entryToSwap;
+					client.setMenuEntries(menuEntries);
+				}
 
 				// the client will open the right-click menu on left-click if the entry at the top is a CC_OP_LOW_PRIORITY.
 				if (entryToSwap.getType() == MenuAction.CC_OP_LOW_PRIORITY)
@@ -1293,13 +1309,53 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				}
 			}
 		}
-
-		client.setMenuEntries(menuEntries);
 	}
 
-	private int getEntryIndexToSwap(MenuEntry[] menuEntries, List<CustomSwap> swaps)
+	private final static class MenuIterator implements Iterator<MenuEntry> {
+		Menu submenu = null;
+		int index = -1;
+		int submenuIndex = -1;
+		int nextIndex = 0;
+		int nextSubmenuIndex = -1;
+		MenuEntry[] menuEntries;
+
+		public MenuIterator(MenuEntry[] menuEntries)
+		{
+			this.menuEntries = menuEntries;
+		}
+
+		@Override
+		public boolean hasNext()
+		{
+			return nextIndex < menuEntries.length;
+		}
+
+		@Override
+		public MenuEntry next()
+		{
+			index = nextIndex;
+			submenuIndex = nextSubmenuIndex;
+			MenuEntry entry = submenuIndex != -1 ? submenu.getMenuEntries()[submenuIndex] : menuEntries[index];
+			if (submenuIndex == -1) submenu = entry.getSubMenu();
+
+			if (submenu != null && submenuIndex + 1 < submenu.getMenuEntries().length) {
+				nextSubmenuIndex++;
+			} else if (submenu != null && submenuIndex == -1 && submenu.getMenuEntries().length > 0) {
+				nextSubmenuIndex = 0;
+			} else {
+				nextIndex++;
+				nextSubmenuIndex = -1;
+			}
+			return entry;
+		}
+//
+//		public MenuEntry peek() {
+//			return submenu != null ? submenu.getMenuEntries()[nextSubmenuIndex] : menuEntries[nextIndex];
+//		}
+	}
+
+	private Pair<Integer, Integer> getEntryIndexToSwap(MenuEntry[] menuEntries, List<CustomSwap> swaps)
 	{
-		int entryIndex = -1;
 		int latestMatchingSwapIndex = -1;
 		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
 		String topEntryOption = Text.standardize(topEntry.getOption());
@@ -1307,9 +1363,15 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		boolean doNotSwapDeprioritizedTake = config.doNotSwapDeprioritizedGroundItems();
 		boolean seenWalkHere = false;
 		// prefer to swap menu entries that are already at or near the top of the list.
-		for (int i = menuEntries.length - 1; i >= 0; i--)
+		int bestMenuEntryIndex = -1;
+		int bestMenuEntrySubmenuIndex = -1;
+
+//		if (client.getGameCycle() % 50 == 0) System.out.println("menu entries:");
+		MenuIterator menuIterator = new MenuIterator(menuEntries);
+		while (menuIterator.hasNext())
 		{
-			MenuEntry entry = menuEntries[i];
+			MenuEntry entry = menuIterator.next();
+//			if (client.getGameCycle() % 50 == 0) System.out.println("\t" + menuIterator.index + " " + menuIterator.submenuIndex + " " + entry.getOption() + " " + entry.getTarget());
 
 			if (doNotSwapDeprioritizedTake) {
 				if (entry.getType() == MenuAction.WALK) {
@@ -1324,11 +1386,14 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			int swapIndex = matches(option, target, topEntryOption, topEntryTarget, swaps);
 			if (swapIndex > latestMatchingSwapIndex)
 			{
-				entryIndex = i;
+				bestMenuEntryIndex = menuIterator.index;
+				bestMenuEntrySubmenuIndex = menuIterator.submenuIndex;
+
 				latestMatchingSwapIndex = swapIndex;
+//				if (client.getGameCycle() % 50 == 0) System.out.println("\t\tmatch found " + menuIterator.index + " " + menuIterator.submenuIndex);
 			}
 		}
-		return entryIndex;
+		return Pair.of(bestMenuEntryIndex, bestMenuEntrySubmenuIndex);
 	}
 
 	private boolean isProtected(MenuEntry entry)
@@ -1365,18 +1430,30 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	private MenuEntry[] filterEntries(MenuEntry[] menuEntries, boolean isInOnMenuOpened)
 	{
 		List<MenuEntry> filtered = new ArrayList<>();
+		List<MenuEntry> submenuFiltered = new ArrayList<>();
 		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
 		String topEntryOption = Text.standardize(topEntry.getOption());
 		String topEntryTarget = Text.standardize(topEntry.getTarget());
-		for (MenuEntry entry : menuEntries)
+		MenuIterator menuIterator = new MenuIterator(menuEntries);
+		while (menuIterator.hasNext())
 		{
+//			if (client.getGameCycle() % 50 == 0) System.out.println(menuIterator.index + " " + menuIterator.nextIndex + " " + menuIterator.submenu);
+			if (menuIterator.submenu != null && menuIterator.nextIndex != menuIterator.index) {
+				menuIterator.submenu.setMenuEntries(submenuFiltered.toArray(new MenuEntry[0]));
+				submenuFiltered.clear();
+			}
+
+			MenuEntry entry = menuIterator.next();
+//			if (client.getGameCycle() % 50 == 0) System.out.println(entry.getOption());
+			boolean isSubmenu = menuIterator.submenu != null && menuIterator.submenuIndex != -1;
+			var entryList = isSubmenu ? submenuFiltered : filtered;
 			// Skips applying custom hides to examine/cancel in PostMenuSwap, and to all other entries in MenuOpened.
 			if (examineCancelLateRemoval) {
 				boolean isExamineOrCancel = entry.getType() == MenuAction.CANCEL || entry.getOption().equals("Examine");
 
 				if (isInOnMenuOpened ^ isExamineOrCancel)
 				{
-					filtered.add(entry);
+					entryList.add(entry);
 					continue;
 				}
 			}
@@ -1385,8 +1462,12 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			String target = Text.standardize(entry.getTarget());
 			if (matches(option, target, topEntryOption, topEntryTarget, customHides) == -1 || isProtected(entry))
 			{
-				filtered.add(entry);
+				entryList.add(entry);
 			}
+		}
+		if (menuIterator.submenu != null && menuIterator.nextIndex != menuIterator.index) {
+			menuIterator.submenu.setMenuEntries(submenuFiltered.toArray(new MenuEntry[0]));
+			submenuFiltered.clear();
 		}
 		return filtered.toArray(new MenuEntry[0]);
 	}

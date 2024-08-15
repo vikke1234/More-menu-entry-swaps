@@ -25,9 +25,11 @@
 package com.hotkeyablemenuswaps;
 
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.EqualsAndHashCode;
 import net.runelite.api.Actor;
+import net.runelite.api.Menu;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.NPC;
@@ -186,14 +188,7 @@ public class TestMenuEntry implements MenuEntry
 	}
 
 	@Override
-	public MenuEntry setParent(MenuEntry parent)
-	{
-		return null;
-	}
-
-	@Nullable
-	@Override
-	public MenuEntry getParent()
+	public Consumer<MenuEntry> onClick()
 	{
 		return null;
 	}
@@ -266,5 +261,25 @@ public class TestMenuEntry implements MenuEntry
 	public Actor getActor()
 	{
 		return actor;
+	}
+
+	@Nullable
+	@Override
+	public Menu getSubMenu()
+	{
+		return null;
+	}
+
+	@Nonnull
+	@Override
+	public Menu createSubMenu()
+	{
+		return null;
+	}
+
+	@Override
+	public void deleteSubMenu()
+	{
+
 	}
 }
