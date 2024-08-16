@@ -28,6 +28,7 @@ package com.hotkeyablemenuswaps;
 
 import static com.google.common.base.Predicates.alwaysTrue;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
@@ -43,12 +44,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.hotkeyablemenuswaps.enums.MaxCapeTeleports;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
-import lombok.Value;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 
@@ -734,52 +730,81 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		mesPluginStyleSwaps(menuEntries);
 	}
 
-	private void createMaxCapeMenu(Menu menu, MenuEntry menuEntry) {
-		// Filter out any invalid entries, case-insensitive
-		List<String> strEntries = Arrays.stream(config.maxCapeMenus().toLowerCase().strip().split("\n"))
-				.filter(MaxCapeTeleports::isValid).collect(Collectors.toList());
-		List<MaxCapeTeleports> teleports = strEntries.stream()
-				.map(MaxCapeTeleports::getTeleport)
-				.filter(entry -> menuEntry.getOption().equals(entry.getOption()))
-				.collect(Collectors.toList());
+	private void createMaxCapeMenu(Menu menu, int index, @NonNull MenuEntry menuEntry, MaxCapeTeleports teleport) {
 
-		int offset = menu.getMenuEntries().length - 1;
-		for (MaxCapeTeleports teleport : teleports) {
-			menu.createMenuEntry(offset)
-					.setOption(teleport.toString())
-					.setTarget(menuEntry.getTarget())
-					.setParam0(menuEntry.getParam0())
-					.setParam1(menuEntry.getParam1())
-					.setType(RUNELITE)
-					.onClick(e -> clientThread.invokeLater(() -> {
-						client.menuAction(menuEntry.getParam0(), menuEntry.getParam1(), CC_OP,
-								menuEntry.getIdentifier(), menuEntry.getItemId(), menuEntry.getOption(), menuEntry.getTarget());
-						for (int op : teleport.getOps()) {
-							pauseresume(teleport.getId(), op);
-						}
-					}));
-		}
+		menu.createMenuEntry(index)
+				.setOption(teleport.toString())
+				.setTarget(menuEntry.getTarget())
+				.setParam0(menuEntry.getParam0())
+				.setParam1(menuEntry.getParam1())
+				.setType(RUNELITE)
+				.onClick(e -> clientThread.invokeLater(() -> {
+					client.menuAction(menuEntry.getParam0(), menuEntry.getParam1(), CC_OP,
+							menuEntry.getIdentifier(), menuEntry.getItemId(), menuEntry.getOption(), menuEntry.getTarget());
+					for (int op : teleport.getOps()) {
+						pauseresume(teleport.getId(), op);
+					}
+				}));
 	}
 
 	private void maxCapeMenu() {
 		Menu menu = client.getMenu();
-		// Get max cape teleport entry, if missing do nothing
-		MenuEntry teleportMenu = Arrays.stream(menu.getMenuEntries())
-				.filter(entry -> entry.getOption().equals("Teleports") && entry.getItemId() == ItemID.MAX_CAPE)
-				.findFirst()
-				.orElse(null);
-		MenuEntry featureMenu = Arrays.stream(menu.getMenuEntries())
-				.filter(entry -> entry.getOption().equals("Features") && entry.getItemId() == ItemID.MAX_CAPE)
-				.findFirst()
-				.orElse(null);
+		MenuEntry[] menuEntries = menu.getMenuEntries();
+		// Create easily accessible map for options
+		Map<String, MenuEntry> menuMap = new HashMap<>();
 
-		if (teleportMenu != null) {
-			createMaxCapeMenu(menu, teleportMenu);
-		}
-		if (featureMenu != null) {
-			createMaxCapeMenu(menu, featureMenu);
+		boolean isMaxCape = true;
+		int index = 0;
+		for (MenuEntry entry : menuEntries) {
+			if (entry == null) {
+				continue;
+			}
+
+			menuMap.put(entry.getOption(), entry);
+			isMaxCape = (isMaxCape && entry.getItemId() == ItemID.MAX_CAPE) || !entry.getOption().equals("Cancel");
 		}
 
+		if (!isMaxCape) {
+			return;
+		}
+
+		List<MaxCapeTeleports> entries = Arrays.stream(config.maxCapeMenus().toLowerCase().strip().split("\n"))
+				.filter(MaxCapeTeleports::isValid).map(MaxCapeTeleports::getTeleport).collect(Collectors.toList());
+		// Reverse to get the order correctly
+
+		Set<String> normalMenus = ImmutableSet.of("Use", "Cancel", "Examine", "Wear", "Drop");
+		Set<MenuEntry> addedMenus = new HashSet<>();
+
+		index = menuEntries.length - 1;
+		for (MaxCapeTeleports entry : entries) {
+			MenuEntry menuEntry = menuMap.get(entry.getOption());
+			if (menuEntry == null) {
+				continue;
+			}
+
+			if (normalMenus.contains(menuEntry.getOption())) {
+				int i = 0;
+				int swap = -1;
+				for (MenuEntry e : menu.getMenuEntries()) {
+					if (e.getOption().equals(menuEntry.getOption())) {
+						swap = i;
+						break;
+					}
+					i++;
+				}
+				assert swap != -1;
+
+				MenuEntry e = menuEntries[swap];
+				menuEntries[swap] = menuEntries[index];
+				menuEntries[index] = e;
+				menu.setMenuEntries(menuEntries);
+			} else {
+				createMaxCapeMenu(menu, ++index, menuEntry, entry);
+				menuEntries = menu.getMenuEntries();
+			}
+			index--;
+		}
+		// We can't remove the menu entirely as it will then end up overwriting the menu entries
 	}
 
 	private void pauseresume(@Component int comp, int op)
