@@ -10,6 +10,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum MaxCapeTeleports {
+    // Normal usage
+    WEAR("Wear", "Wear", 0),
+    USE("Use", "Use", 0),
+    EXAMINE("Examine", "Examine", 0),
+    DROP("Drop", "Drop", 0),
+    CANCEL("Cancel", "Cancel", 0),
+    TELEPORTS("Teleports", "Teleports", 0),
+
     // Teleports
     WARRIORS_GUILD("Warrior's Guild", "Teleports", ComponentID.ADVENTURE_LOG_OPTIONS, 0),
     FISHING_GUILD("Fishing Guild", "Teleports", ComponentID.ADVENTURE_LOG_OPTIONS, 1),
@@ -36,7 +44,7 @@ public enum MaxCapeTeleports {
     STAMINA_BOOST("Stamina Boost", "Features", ComponentID.DIALOG_OPTION_OPTIONS, 5),
     ;
 
-    static Map<String, MaxCapeTeleports> mapper;
+    static final Map<String, MaxCapeTeleports> mapper;
     final String name;
 
     @Getter
