@@ -41,7 +41,11 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.hotkeyablemenuswaps.enums.MaxCapeTeleports;
 import lombok.*;
@@ -765,15 +769,28 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		if (!isMaxCape) {
+			// Do nothing if it wasn't a max cape. TODO: add diary cape.
 			return;
 		}
 
-		List<MaxCapeTeleports> entries = Arrays.stream(config.maxCapeMenus().toLowerCase().strip().split("\n"))
-				.filter(MaxCapeTeleports::isValid).map(MaxCapeTeleports::getTeleport).collect(Collectors.toList());
-		// Reverse to get the order correctly
+		String conf =
+				config.maxCapeMenus().toLowerCase().strip();
+		// star (*) intentionally missing from the list: .+?()|[]{}^$\\\\
+		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
+		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
+		Matcher regexEscapeMatcher = regexEscapes.matcher(conf);
+		conf = regexEscapeMatcher.replaceAll("\\\\$1");
+		System.out.println(conf);
+
+		List<MaxCapeTeleports> entries = Arrays.stream(conf.split("\n"))
+				// We allow * for wildcards, replace it with regex variant
+				.map(pat -> pat.replace("*", ".*"))
+				.map(Pattern::compile)
+				.map(MaxCapeTeleports::getTeleports)
+				.flatMap(Collection::stream) // Collapse list into the current list
+				.collect(Collectors.toList());
 
 		Set<String> normalMenus = ImmutableSet.of("Use", "Cancel", "Examine", "Wear", "Drop");
-		Set<MenuEntry> addedMenus = new HashSet<>();
 
 		index = menuEntries.length - 1;
 		for (MaxCapeTeleports entry : entries) {
@@ -793,7 +810,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 					i++;
 				}
 				assert swap != -1;
-
+				// Sort it to the given order
 				MenuEntry e = menuEntries[swap];
 				menuEntries[swap] = menuEntries[index];
 				menuEntries[index] = e;
