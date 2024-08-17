@@ -4,10 +4,9 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import net.runelite.api.widgets.ComponentID;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public enum MaxCapeTeleports {
     // Normal usage
@@ -73,12 +72,12 @@ public enum MaxCapeTeleports {
         System.arraycopy(ops, 0, this.ops, 0, ops.length);
     }
 
-    public static boolean isValid(String name) {
-        return mapper.containsKey(name);
-    }
-
-    public static MaxCapeTeleports getTeleport(String name) {
-        return mapper.get(name);
+    public static List<MaxCapeTeleports> getTeleports(Pattern pattern) {
+        List<MaxCapeTeleports> features = mapper.entrySet().stream()
+                .filter(entry -> pattern.matcher(entry.getKey()).matches())
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList());
+        return features;
     }
 
     @Override
