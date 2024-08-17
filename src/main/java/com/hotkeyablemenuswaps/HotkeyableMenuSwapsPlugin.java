@@ -1526,6 +1526,38 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 //		}
 	}
 
+	private final static class MenuReverseIterator implements Iterator<MenuEntry> {
+		List<MenuEntry> entries = new ArrayList<>();
+		List<Integer> indexes = new ArrayList<>();
+		List<Integer> submenuIndexes = new ArrayList<>();
+
+		int i;
+		int index;
+		int submenuIndex;
+
+		public MenuReverseIterator(MenuEntry[] menuEntries) {
+			MenuIterator menuIterator = new MenuIterator(menuEntries);
+			while (menuIterator.hasNext()) {
+				entries.add(menuIterator.next());
+				indexes.add(menuIterator.index);
+				submenuIndexes.add(menuIterator.submenuIndex);
+			}
+			i = entries.size() - 1;
+		}
+
+		@Override public boolean hasNext() {
+			return i >= 0;
+		}
+
+		@Override public MenuEntry next() {
+			MenuEntry entry = entries.get(i);
+			index = indexes.get(i);
+			submenuIndex = submenuIndexes.get(i);
+			i--;
+			return entry;
+		}
+	}
+
 	private Pair<Integer, Integer> getEntryIndexToSwap(MenuEntry[] menuEntries, List<CustomSwap> swaps)
 	{
 		int latestMatchingSwapIndex = -1;
@@ -1539,7 +1571,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		int bestMenuEntrySubmenuIndex = -1;
 
 //		if (client.getGameCycle() % 50 == 0) System.out.println("menu entries:");
-		MenuIterator menuIterator = new MenuIterator(menuEntries);
+		MenuReverseIterator menuIterator = new MenuReverseIterator(menuEntries);
 		while (menuIterator.hasNext())
 		{
 			MenuEntry entry = menuIterator.next();
@@ -1556,7 +1588,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			String option = Text.standardize(entry.getOption());
 			String target = Text.standardize(entry.getTarget());
 			int swapIndex = matches(option, target, topEntryOption, topEntryTarget, swaps);
-			if (swapIndex >= latestMatchingSwapIndex)
+			if (swapIndex > latestMatchingSwapIndex)
 			{
 				bestMenuEntryIndex = menuIterator.index;
 				bestMenuEntrySubmenuIndex = menuIterator.submenuIndex;
