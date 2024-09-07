@@ -734,21 +734,24 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		mesPluginStyleSwaps(menuEntries);
 	}
 
-	private void createMaxCapeMenu(Menu menu, int index, @NonNull MenuEntry menuEntry, MaxCapeTeleports teleport) {
+	private void createMaxCapeMenu(Menu menu, int index, @NonNull MenuEntry menuEntry) {
 
 		menu.createMenuEntry(index)
-				.setOption(teleport.toString())
+				.setOption(menuEntry.getOption())
 				.setTarget(menuEntry.getTarget())
 				.setParam0(menuEntry.getParam0())
 				.setParam1(menuEntry.getParam1())
-				.setType(RUNELITE)
-				.onClick(e -> clientThread.invokeLater(() -> {
-					client.menuAction(menuEntry.getParam0(), menuEntry.getParam1(), CC_OP,
-							menuEntry.getIdentifier(), menuEntry.getItemId(), menuEntry.getOption(), menuEntry.getTarget());
-					for (int op : teleport.getOps()) {
-						pauseresume(teleport.getId(), op);
-					}
-				}));
+				.setIdentifier(menuEntry.getIdentifier())
+				.setType(menuEntry.getType())
+				.onClick(menuEntry.onClick());
+	}
+
+	String escapeRegex(String conf) {
+		// star (*) intentionally missing from the list: .+?()|[]{}^$\\\\
+		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
+		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
+		Matcher regexEscapeMatcher = regexEscapes.matcher(conf.toLowerCase().strip());
+		return regexEscapeMatcher.replaceAll("\\\\$1");
 	}
 
 	private void maxCapeMenu() {
@@ -757,15 +760,15 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// Create easily accessible map for options
 		Map<String, MenuEntry> menuMap = new HashMap<>();
 
-		boolean isMaxCape = true;
+		boolean isMaxCape = false;
 		int index = 0;
 		for (MenuEntry entry : menuEntries) {
-			if (entry == null) {
+			if (entry == null || entry.getOption().equals("Cancel")) {
 				continue;
 			}
 
-			menuMap.put(entry.getOption(), entry);
-			isMaxCape = (isMaxCape && entry.getItemId() == ItemID.MAX_CAPE) || !entry.getOption().equals("Cancel");
+			menuMap.put(entry.getOption().toLowerCase(), entry);
+			isMaxCape = (isMaxCape || entry.getItemId() == ItemID.MAX_CAPE);
 		}
 
 		if (!isMaxCape) {
@@ -773,37 +776,43 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			return;
 		}
 
-		String conf =
-				config.maxCapeMenus().toLowerCase().strip();
-		// star (*) intentionally missing from the list: .+?()|[]{}^$\\\\
-		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
-		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
-		Matcher regexEscapeMatcher = regexEscapes.matcher(conf);
-		conf = regexEscapeMatcher.replaceAll("\\\\$1");
+		Menu teleportSubmenu = menuMap.get("teleports").getSubMenu();
+		if (teleportSubmenu == null) {
+			return; // MES sub menus required
+		}
+
+		String conf = escapeRegex(config.maxCapeMenus());
 		System.out.println(conf);
 
-		List<MaxCapeTeleports> entries = Arrays.stream(conf.split("\n"))
-				// We allow * for wildcards, replace it with regex variant
+		// Perform linear search of the teleport submenus
+		List<MenuEntry> teleportEntries = Arrays.stream(conf.split("\n"))
 				.map(pat -> pat.replace("*", ".*"))
-				.map(Pattern::compile)
-				.map(MaxCapeTeleports::getTeleports)
-				.flatMap(Collection::stream) // Collapse list into the current list
+				.map(pat -> {
+					for (MenuEntry e : teleportSubmenu.getMenuEntries()) {
+						if (Pattern.matches(pat, e.getOption().toLowerCase())) {
+							return e;
+						}
+					}
+
+					for (MenuEntry e : menu.getMenuEntries()) {
+						if (Pattern.matches(pat, e.getOption().toLowerCase())) {
+							return e;
+						}
+					}
+                    return null;
+                })
+				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 
 		Set<String> normalMenus = ImmutableSet.of("Use", "Cancel", "Examine", "Wear", "Drop");
 
 		index = menuEntries.length - 1;
-		for (MaxCapeTeleports entry : entries) {
-			MenuEntry menuEntry = menuMap.get(entry.getOption());
-			if (menuEntry == null) {
-				continue;
-			}
-
-			if (normalMenus.contains(menuEntry.getOption())) {
+		for (MenuEntry entry : teleportEntries) {
+			if (normalMenus.contains(entry.getOption())) {
 				int i = 0;
 				int swap = -1;
 				for (MenuEntry e : menu.getMenuEntries()) {
-					if (e.getOption().equals(menuEntry.getOption())) {
+					if (e.getOption().equals(entry.getOption())) {
 						swap = i;
 						break;
 					}
@@ -816,11 +825,12 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				menuEntries[index] = e;
 				menu.setMenuEntries(menuEntries);
 			} else {
-				createMaxCapeMenu(menu, ++index, menuEntry, entry);
+				createMaxCapeMenu(menu, ++index, entry);
 				menuEntries = menu.getMenuEntries();
 			}
 			index--;
 		}
+		menuMap.get("teleports").deleteSubMenu();
 		// We can't remove the menu entirely as it will then end up overwriting the menu entries
 	}
 
