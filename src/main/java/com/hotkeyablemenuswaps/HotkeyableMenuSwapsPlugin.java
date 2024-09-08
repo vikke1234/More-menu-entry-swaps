@@ -730,6 +730,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		// TODO: remove once real submenus get released
 		createMaxSubmenu();
 		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideDiaryUsedSubmenus(), config.useMaxSubmenus());
+		sortAndAdd(List.of(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T), escapeRegex(config.diaryCapeMenus()), config.hideDiaryUsedSubmenus(), config.useDiarySubmenus());
 
 		mesPluginStyleSwaps(menuEntries);
 	}
