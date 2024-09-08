@@ -729,9 +729,54 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		if (menuEntries.length == 0) return;
 
 		spellbookSwapSwaps(menuEntries);
+		// TODO: remove once real submenus get released
+		createMaxSubmenu();
 		maxCapeMenu();
 
 		mesPluginStyleSwaps(menuEntries);
+	}
+	private void createMaxSubmenu() {
+		Map<String, MenuEntry> menuMap = getMenuMap();
+		MenuEntry features = menuMap.get("features");
+		if (features == null || features.getItemId() != ItemID.MAX_CAPE) {
+			return;
+		}
+
+        Menu submenu = features.createSubMenu();
+		int i = 0;
+		for (MaxCapeTeleports feature : MaxCapeTeleports.values()) {
+			submenu.createMenuEntry(i++)
+					.setOption(feature.toString())
+					.setParam1(features.getParam1())
+					.setParam0(features.getParam0())
+					.setTarget(features.getTarget())
+					.setType(RUNELITE)
+					.onClick(e -> {
+						client.menuAction(features.getParam0(), features.getParam1(), CC_OP,
+								features.getIdentifier(), features.getItemId(), features.getOption(), features.getTarget());
+						for (int op : feature.getOps()) {
+							pauseresume(feature.getId(), op);
+						}
+					});
+		}
+
+	}
+
+	private Map<String, MenuEntry> getMenuMap() {
+		Menu menu = client.getMenu();
+		MenuEntry[] menuEntries = menu.getMenuEntries();
+		// Create easily accessible map for options
+		Map<String, MenuEntry> menuMap = new HashMap<>();
+
+		for (MenuEntry entry : menuEntries) {
+			if (entry == null || entry.getOption().equals("Cancel")) {
+				continue;
+			}
+
+			menuMap.put(entry.getOption().toLowerCase(), entry);
+		}
+
+		return menuMap;
 	}
 
 	private void createMaxCapeMenu(Menu menu, int index, @NonNull MenuEntry menuEntry) {
@@ -746,78 +791,95 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				.onClick(menuEntry.onClick());
 	}
 
-	String escapeRegex(String conf) {
+	/**
+	 * Escape a string for regex, allow for * to be a wildcard
+	 * @param conf regex
+	 * @return escaped string
+	 */
+	List<String> escapeRegex(String conf) {
 		// star (*) intentionally missing from the list: .+?()|[]{}^$\\\\
 		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
 		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
 		Matcher regexEscapeMatcher = regexEscapes.matcher(conf.toLowerCase().strip());
-		return regexEscapeMatcher.replaceAll("\\\\$1");
+		return Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
+	}
+
+	private List<MenuEntry> searchSubmenus(List<MenuEntry> parents, List<String> names) {
+		Menu menu = client.getMenu();
+		List<MenuEntry> submenus = parents.stream()
+				.map(MenuEntry::getSubMenu)
+				.filter(Objects::nonNull)
+				.map(Menu::getMenuEntries)
+				.flatMap(Arrays::stream)
+				.collect(Collectors.toList());
+		List<MenuEntry> allMenus =
+				Stream.concat(Arrays.stream(menu.getMenuEntries()), submenus.stream()).collect(Collectors.toList());
+
+
+		List<MenuEntry> entries = names.stream().map(pattern -> {
+			// submenu can't be null
+			for (MenuEntry e : allMenus) {
+				if (Pattern.matches(pattern, e.getOption().toLowerCase())) {
+					return e;
+				}
+			}
+			return null;
+		}) .filter(Objects::nonNull).collect(Collectors.toList());
+		return entries;
+	}
+
+	/**
+	 * Needed to only hide parent menus
+	 *
+	 * @return Submenu parents that are used for a set of patterns
+	 */
+	private List<MenuEntry> getParents(List<String> patterns) {
+		Menu menu = client.getMenu();
+		List<MenuEntry> submenus = Arrays.stream(menu.getMenuEntries())
+				.filter(menuEntry -> {
+					Menu submenu = menuEntry.getSubMenu();
+
+					if (submenu != null) {
+						for (String pattern : patterns) {
+							boolean contains = Arrays.stream(submenu.getMenuEntries())
+									.map(MenuEntry::getOption)
+									.map(String::toLowerCase)
+									.anyMatch(o -> o.matches(pattern));
+
+							if (contains) {
+								return true;
+							}
+						}
+					}
+					return false;
+				}).collect(Collectors.toList());
+		return submenus;
 	}
 
 	private void maxCapeMenu() {
 		Menu menu = client.getMenu();
 		MenuEntry[] menuEntries = menu.getMenuEntries();
-		// Create easily accessible map for options
-		Map<String, MenuEntry> menuMap = new HashMap<>();
 
-		boolean isMaxCape = false;
-		int index = 0;
-		for (MenuEntry entry : menuEntries) {
-			if (entry == null || entry.getOption().equals("Cancel")) {
-				continue;
-			}
+		Map<String, MenuEntry> menuMap = getMenuMap();
 
-			menuMap.put(entry.getOption().toLowerCase(), entry);
-			isMaxCape = (isMaxCape || entry.getItemId() == ItemID.MAX_CAPE);
-		}
-
-		if (!isMaxCape) {
-			// Do nothing if it wasn't a max cape. TODO: add diary cape.
-			return;
-		}
-
-		Menu teleportSubmenu = menuMap.get("teleports").getSubMenu();
-		if (teleportSubmenu == null) {
-			return; // MES sub menus required
-		}
-
-		String conf = escapeRegex(config.maxCapeMenus());
+		List<String> conf = escapeRegex(config.maxCapeMenus());
 		System.out.println(conf);
+		List<MenuEntry> parents = getParents(conf);
+		List<MenuEntry> teleportEntries = searchSubmenus(parents, conf);
 
-		// Perform linear search of the teleport submenus
-		List<MenuEntry> teleportEntries = Arrays.stream(conf.split("\n"))
-				.map(pat -> pat.replace("*", ".*"))
-				.map(pat -> {
-					for (MenuEntry e : teleportSubmenu.getMenuEntries()) {
-						if (Pattern.matches(pat, e.getOption().toLowerCase())) {
-							return e;
-						}
-					}
-
-					for (MenuEntry e : menu.getMenuEntries()) {
-						if (Pattern.matches(pat, e.getOption().toLowerCase())) {
-							return e;
-						}
-					}
-                    return null;
-                })
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
-
-		Set<String> normalMenus = ImmutableSet.of("Use", "Cancel", "Examine", "Wear", "Drop");
-
-		index = menuEntries.length - 1;
+		int index = menuEntries.length - 1;
 		for (MenuEntry entry : teleportEntries) {
-			if (normalMenus.contains(entry.getOption())) {
+			if (menuMap.containsKey(entry.getOption().toLowerCase())) {
 				int i = 0;
 				int swap = -1;
-				for (MenuEntry e : menu.getMenuEntries()) {
+				for (MenuEntry e : menuEntries) {
 					if (e.getOption().equals(entry.getOption())) {
 						swap = i;
 						break;
 					}
 					i++;
 				}
+
 				assert swap != -1;
 				// Sort it to the given order
 				MenuEntry e = menuEntries[swap];
@@ -825,13 +887,23 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				menuEntries[index] = e;
 				menu.setMenuEntries(menuEntries);
 			} else {
+				// if the entry doesn't exist, create it
 				createMaxCapeMenu(menu, ++index, entry);
+				// refresh list
 				menuEntries = menu.getMenuEntries();
 			}
 			index--;
 		}
-		menuMap.get("teleports").deleteSubMenu();
-		// We can't remove the menu entirely as it will then end up overwriting the menu entries
+
+		if (!config.useMaxSubmenus()) {
+			if (config.hideUsedSubmenus()) {
+				for (MenuEntry e : parents) {
+					e.deleteSubMenu();
+				}
+			} else {
+				menuMap.values().forEach(MenuEntry::deleteSubMenu);
+			}
+		}
 	}
 
 	private void pauseresume(@Component int comp, int op)
