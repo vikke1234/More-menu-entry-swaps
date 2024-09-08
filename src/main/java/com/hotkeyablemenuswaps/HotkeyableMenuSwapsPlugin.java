@@ -28,7 +28,6 @@ package com.hotkeyablemenuswaps;
 
 import static com.google.common.base.Predicates.alwaysTrue;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
@@ -45,7 +44,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import com.hotkeyablemenuswaps.enums.MaxCapeTeleports;
 import lombok.*;
@@ -731,7 +729,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		spellbookSwapSwaps(menuEntries);
 		// TODO: remove once real submenus get released
 		createMaxSubmenu();
-		maxCapeMenu();
+		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideDiaryUsedSubmenus(), config.useMaxSubmenus());
 
 		mesPluginStyleSwaps(menuEntries);
 	}
@@ -804,7 +802,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		return Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
 	}
 
-	private List<MenuEntry> searchSubmenus(List<MenuEntry> parents, List<String> names) {
+	private List<MenuEntry> searchSubmenus(List<Integer> itemIDs, List<MenuEntry> parents, List<String> names) {
 		Menu menu = client.getMenu();
 		List<MenuEntry> submenus = parents.stream()
 				.map(MenuEntry::getSubMenu)
@@ -819,7 +817,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		List<MenuEntry> entries = names.stream().map(pattern -> {
 			// submenu can't be null
 			for (MenuEntry e : allMenus) {
-				if (Pattern.matches(pattern, e.getOption().toLowerCase())) {
+				if (itemIDs.contains(e.getItemId()) && Pattern.matches(pattern, e.getOption().toLowerCase())) {
 					return e;
 				}
 			}
@@ -856,16 +854,18 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		return submenus;
 	}
 
-	private void maxCapeMenu() {
+	/**
+	 * Sorts the menu in the given order and adds menus from submenus
+	 */
+	private void sortAndAdd(List<Integer> itemIDs, List<String> conf, boolean hideUsed, boolean useSubmenus) {
 		Menu menu = client.getMenu();
 		MenuEntry[] menuEntries = menu.getMenuEntries();
 
 		Map<String, MenuEntry> menuMap = getMenuMap();
 
-		List<String> conf = escapeRegex(config.maxCapeMenus());
-		System.out.println(conf);
 		List<MenuEntry> parents = getParents(conf);
-		List<MenuEntry> teleportEntries = searchSubmenus(parents, conf);
+		if (parents.isEmpty()) return;
+		List<MenuEntry> teleportEntries = searchSubmenus(itemIDs, parents, conf);
 
 		int index = menuEntries.length - 1;
 		for (MenuEntry entry : teleportEntries) {
@@ -895,8 +895,8 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			index--;
 		}
 
-		if (!config.useMaxSubmenus()) {
-			if (config.hideUsedSubmenus()) {
+		if (!useSubmenus) {
+			if (hideUsed) {
 				for (MenuEntry e : parents) {
 					e.deleteSubMenu();
 				}
