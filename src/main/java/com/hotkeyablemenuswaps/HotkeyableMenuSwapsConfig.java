@@ -171,6 +171,28 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return builder.toString();
 	}
 
+	@ConfigItem(
+			keyName = "maxCapeSubmenus",
+			name = "Use max cape submenus",
+			description = "",
+			section = maxCapeMenus,
+			position = 2
+	)
+	default boolean useMaxSubmenus() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "hideUsedSubmenus",
+			name = "Hide submenus that have been used",
+			description = "",
+			section = maxCapeMenus,
+			position = 2
+	)
+	default boolean hideUsedSubmenus() {
+		return false;
+	}
+
 	@ConfigSection(name = "Advanced", description = "Advanced options", position = -6, closedByDefault = true)
 	String advancedSection = "Advanced";
 
