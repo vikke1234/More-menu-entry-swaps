@@ -154,21 +154,52 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "https://github.com/geheur/More-menu-entry-swaps/wiki/Custom-swaps";
 	}
 
+	@ConfigSection(name = "Diary Cape Menus", description = "", position = -7, closedByDefault = true)
+	String diaryCapeMenus = "Diary Cape Menus";
+	@ConfigItem(
+			keyName = "diaryCapeSwaps",
+			name = "Diary Cape Swaps",
+			description = "Diary cape entries to bring out of the menu. Supports wildcards (*).",
+			section = diaryCapeMenus,
+			position = 2
+	)
+	default String diaryCapeMenus() {
+		return "";
+	}
+
+	@ConfigItem(
+			keyName = "diaryCapeSubmenus",
+			name = "Use diary cape submenus",
+			description = "",
+			section = diaryCapeMenus,
+			position = 2
+	)
+	default boolean useDiarySubmenus() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "hideDiaryUsedSubmenus",
+			name = "Hide submenus that have been used",
+			description = "",
+			section = diaryCapeMenus,
+			position = 2
+	)
+	default boolean hideDiaryUsedSubmenus() {
+		return false;
+	}
+
 	@ConfigSection(name = "Max Cape Menus", description = "", position = -7, closedByDefault = true)
 	String maxCapeMenus = "Max Cape Menus";
 	@ConfigItem(
 			keyName = "maxCapeSwaps",
 			name = "Max Cape Swaps",
-			description = "Max cape entries to bring out of the menu. NOTE: needs accents, reset to defaults if you can't spell.",
+			description = "Max cape entries to bring out of the menu. Supports wildcards (*).",
 			section = maxCapeMenus,
 			position = 2
 	)
 	default String maxCapeMenus() {
-		StringBuilder builder = new StringBuilder();
-		for (MaxCapeTeleports teleport : MaxCapeTeleports.values()) {
-			builder.append("/" + teleport.toString() + "\n");
-		}
-		return builder.toString();
+		return "";
 	}
 
 	@ConfigItem(
