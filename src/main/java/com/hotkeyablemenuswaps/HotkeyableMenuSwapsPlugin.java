@@ -803,7 +803,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		return Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
 	}
 
-	private List<MenuEntry> searchSubmenus(List<Integer> itemIDs, List<MenuEntry> parents, List<String> names) {
+	private List<MenuEntry> searchSubmenus(List<MenuEntry> parents, List<String> names) {
 		Menu menu = client.getMenu();
 		List<MenuEntry> submenus = parents.stream()
 				.map(MenuEntry::getSubMenu)
@@ -818,7 +818,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		List<MenuEntry> entries = names.stream().map(pattern -> {
 			// submenu can't be null
 			for (MenuEntry e : allMenus) {
-				if (itemIDs.contains(e.getItemId()) && Pattern.matches(pattern, e.getOption().toLowerCase())) {
+				if (Pattern.matches(pattern, e.getOption().toLowerCase())) {
 					return e;
 				}
 			}
@@ -832,10 +832,13 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	 *
 	 * @return Submenu parents that are used for a set of patterns
 	 */
-	private List<MenuEntry> getParents(List<String> patterns) {
+	private List<MenuEntry> getParents(List<Integer> itemIDs, List<String> patterns) {
 		Menu menu = client.getMenu();
 		List<MenuEntry> submenus = Arrays.stream(menu.getMenuEntries())
 				.filter(menuEntry -> {
+					if (!itemIDs.contains(menuEntry.getItemId())) {
+						return false;
+					}
 					Menu submenu = menuEntry.getSubMenu();
 
 					if (submenu != null) {
@@ -864,9 +867,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		Map<String, MenuEntry> menuMap = getMenuMap();
 
-		List<MenuEntry> parents = getParents(conf);
+		List<MenuEntry> parents = getParents(itemIDs, conf);
 		if (parents.isEmpty()) return;
-		List<MenuEntry> teleportEntries = searchSubmenus(itemIDs, parents, conf);
+		List<MenuEntry> teleportEntries = searchSubmenus(parents, conf);
 
 		int index = menuEntries.length - 1;
 		for (MenuEntry entry : teleportEntries) {
