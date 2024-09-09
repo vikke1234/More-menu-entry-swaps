@@ -159,9 +159,9 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(
 			keyName = "diaryCapeSwaps",
 			name = "Diary Cape Swaps",
-			description = "Diary cape entries to bring out of the menu. Supports wildcards (*).",
+			description = "*** Requires vanilla sub menus enabled *** Diary cape entries to bring out of the menu. Supports wildcards (*).",
 			section = diaryCapeMenus,
-			position = 2
+			position = 3
 	)
 	default String diaryCapeMenus() {
 		return "";
@@ -172,7 +172,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 			name = "Use diary cape submenus",
 			description = "",
 			section = diaryCapeMenus,
-			position = 2
+			position = 1
 	)
 	default boolean useDiarySubmenus() {
 		return true;
@@ -180,7 +180,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "hideDiaryUsedSubmenus",
-			name = "Hide submenus that have been used",
+			name = "Hide used submenus",
 			description = "",
 			section = diaryCapeMenus,
 			position = 2
@@ -194,9 +194,9 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigItem(
 			keyName = "maxCapeSwaps",
 			name = "Max Cape Swaps",
-			description = "Max cape entries to bring out of the menu. Supports wildcards (*).",
+			description = "*** Requires vanilla sub menus enabled *** Max cape entries to bring out of the menu. Supports wildcards (*).",
 			section = maxCapeMenus,
-			position = 2
+			position = 3
 	)
 	default String maxCapeMenus() {
 		return "";
@@ -207,7 +207,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 			name = "Use max cape submenus",
 			description = "",
 			section = maxCapeMenus,
-			position = 2
+			position = 1
 	)
 	default boolean useMaxSubmenus() {
 		return true;
@@ -215,7 +215,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 
 	@ConfigItem(
 			keyName = "hideUsedSubmenus",
-			name = "Hide submenus that have been used",
+			name = "Hide used submenus",
 			description = "",
 			section = maxCapeMenus,
 			position = 2
