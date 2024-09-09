@@ -729,7 +729,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		spellbookSwapSwaps(menuEntries);
 		// TODO: remove once real submenus get released
 		createMaxSubmenu();
-		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideDiaryUsedSubmenus(), config.useMaxSubmenus());
+		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideUsedMaxSubmenus(), config.useMaxSubmenus());
 		sortAndAdd(List.of(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T), escapeRegex(config.diaryCapeMenus()), config.hideDiaryUsedSubmenus(), config.useDiarySubmenus());
 
 		mesPluginStyleSwaps(menuEntries);
@@ -900,14 +900,13 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		}
 
 		if (!useSubmenus) {
-			if (hideUsed) {
+			menuMap.values().forEach(MenuEntry::deleteSubMenu);
+		}
+		if (hideUsed) {
 				for (MenuEntry e : parents) {
 					e.deleteSubMenu();
 				}
-			} else {
-				menuMap.values().forEach(MenuEntry::deleteSubMenu);
 			}
-		}
 	}
 
 	private void pauseresume(@Component int comp, int op)

@@ -214,13 +214,13 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "hideUsedSubmenus",
+			keyName = "hideUsedMaxSubmenus",
 			name = "Hide used submenus",
 			description = "",
 			section = maxCapeMenus,
 			position = 2
 	)
-	default boolean hideUsedSubmenus() {
+	default boolean hideUsedMaxSubmenus() {
 		return false;
 	}
 
