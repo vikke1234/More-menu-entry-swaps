@@ -815,15 +815,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 				Stream.concat(Arrays.stream(menu.getMenuEntries()), submenus.stream()).collect(Collectors.toList());
 
 
-		List<MenuEntry> entries = names.stream().map(pattern -> {
+		List<MenuEntry> entries = names.stream().flatMap(pattern -> {
 			// submenu can't be null
-			for (MenuEntry e : allMenus) {
-				if (Pattern.matches(pattern, e.getOption().toLowerCase())) {
-					return e;
-				}
-			}
-			return null;
-		}) .filter(Objects::nonNull).collect(Collectors.toList());
+			return allMenus.stream().filter(e -> e.getOption().toLowerCase().matches(pattern));
+		}).collect(Collectors.toList());
 		return entries;
 	}
 
