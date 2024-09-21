@@ -549,6 +549,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		swapPortalNexus = null;
 		swapPortalNexusXericsTalisman = null;
 		swapPortalNexusDigsitePendant = null;
+		hotkeys = 0;
 	}
 
 	// Copy-pasted from the official runelite menu entry swapper plugin, with some modification.
