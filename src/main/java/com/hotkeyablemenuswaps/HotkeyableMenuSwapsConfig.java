@@ -154,8 +154,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return "https://github.com/geheur/More-menu-entry-swaps/wiki/Custom-swaps";
 	}
 
-	@ConfigSection(name = "Diary Cape Menus", description = "", position = -7, closedByDefault = true)
-	String diaryCapeMenus = "Diary Cape Menus";
+	@ConfigSection(name = "Diary Cape Sort", description = "", position = -7, closedByDefault = true)
+	String diaryCapeMenus = "Diary Cape Sort";
 	@ConfigItem(
 			keyName = "diaryCapeSort",
 			name = "Diary Cape Sort",
@@ -179,8 +179,8 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		return false;
 	}
 
-	@ConfigSection(name = "Max Cape Menus", description = "", position = -7, closedByDefault = true)
-	String maxCapeMenus = "Max Cape Menus";
+	@ConfigSection(name = "Max Cape Sort", description = "", position = -7, closedByDefault = true)
+	String maxCapeMenus = "Max Cape Sort";
 	@ConfigItem(
 		keyName = "maxCapeSort",
 		name = "Max Cape Sort",
