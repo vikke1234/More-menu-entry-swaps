@@ -741,7 +741,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
 		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
 		Widget widget = topEntry.getWidget();
-		if (widget != null) return;
+		if (widget == null) return;
 		int interfaceId = WidgetUtil.componentToInterface(widget.getId());
 		if (interfaceId != InterfaceID.EQUIPMENT && interfaceId != InterfaceID.INVENTORY) return;
 		int itemId = topEntry.getItemId();
@@ -751,10 +751,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			createMaxSubmenu(menuMap);
 			sortAndAdd(menuMap, maxCapeSort);
 			if (config.hideMaxCapeTeleportsSubmenu()) {
-				menuMap.get("Teleports").deleteSubMenu();
+				menuMap.get("teleports").deleteSubMenu();
 			}
 			if (config.hideMaxCapeFeaturesSubmenu()) {
-				menuMap.get("Features").deleteSubMenu();
+				menuMap.get("features").deleteSubMenu();
 			}
 		} else if (itemId == ItemID.ACHIEVEMENT_DIARY_CAPE || itemId == ItemID.ACHIEVEMENT_DIARY_CAPE_T) {
 			Map<String, MenuEntry> menuMap = getMenuMap();
@@ -837,7 +837,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
 		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
 		Matcher regexEscapeMatcher = regexEscapes.matcher(conf.toLowerCase().strip());
-		return Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
+		List<String> strings = Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
+		System.out.println(strings);
+		return strings;
 	}
 
 	private List<MenuEntry> searchSubmenus(List<MenuEntry> parents, List<String> names) {
