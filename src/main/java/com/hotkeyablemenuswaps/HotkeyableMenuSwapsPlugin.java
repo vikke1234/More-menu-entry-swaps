@@ -720,21 +720,36 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with this plugin.
 	public void onPostMenuSort(PostMenuSort e)
 	{
+		maxCapeStuff();
 		sortGroundItems();
 		customSwaps();
 
-		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
+		MenuEntry[] menuEntries = client.getMenuEntries();
 
 		if (menuEntries.length == 0) return;
 
 		spellbookSwapSwaps(menuEntries);
-		// TODO: remove once real submenus get released
-		createMaxSubmenu();
-		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideUsedMaxSubmenus(), config.useMaxSubmenus());
-		sortAndAdd(List.of(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T), escapeRegex(config.diaryCapeMenus()), config.hideDiaryUsedSubmenus(), config.useDiarySubmenus());
 
 		mesPluginStyleSwaps(menuEntries);
 	}
+
+	private void maxCapeStuff() {
+		// TODO: remove once real submenus get released
+		MenuEntry topEntry = client.getMenuEntries()[client.getMenuEntries().length - 1];
+		Widget widget = topEntry.getWidget();
+		if (widget != null) return;
+		int interfaceId = WidgetUtil.componentToInterface(widget.getId());
+		if (interfaceId != InterfaceID.EQUIPMENT && interfaceId != InterfaceID.INVENTORY) return;
+		int itemId = topEntry.getItemId();
+
+		if (itemId == ItemID.MAX_CAPE) {
+			createMaxSubmenu();
+			sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeSort()), config.hideUsedMaxSubmenus(), config.useMaxSubmenus());
+		} else if (itemId == ItemID.ACHIEVEMENT_DIARY_CAPE || itemId == ItemID.ACHIEVEMENT_DIARY_CAPE_T) {
+			sortAndAdd(List.of(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T), escapeRegex(config.diaryCapeMenus()), config.hideDiaryUsedSubmenus(), config.useDiarySubmenus());
+		}
+	}
+
 	private void createMaxSubmenu() {
 		Map<String, MenuEntry> menuMap = getMenuMap();
 		MenuEntry features = menuMap.get("features");

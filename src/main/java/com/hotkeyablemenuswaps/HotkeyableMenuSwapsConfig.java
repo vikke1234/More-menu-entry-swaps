@@ -198,7 +198,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 			section = maxCapeMenus,
 			position = 3
 	)
-	default String maxCapeMenus() {
+	default String maxCapeSort() {
 		return "";
 	}
 
