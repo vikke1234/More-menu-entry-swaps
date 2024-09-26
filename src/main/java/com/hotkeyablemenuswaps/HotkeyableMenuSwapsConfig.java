@@ -160,7 +160,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 			keyName = "diaryCapeSort",
 			name = "Diary Cape Sort",
 			description = "*** Requires sub menus enabled in Menu Entry Swapper plugin ***<br>" +
-				"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Jarr\"). Supports wildcards (*).",
+				"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Jarr\"), each on its own line. Supports wildcards (*).",
 			section = diaryCapeMenus,
 			position = 3
 	)
@@ -185,7 +185,7 @@ public interface HotkeyableMenuSwapsConfig extends Config
 		keyName = "maxCapeSort",
 		name = "Max Cape Sort",
 		description = "*** Requires sub menus enabled in Menu Entry Swapper plugin ***<br>" +
-			"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Crafting guild\"). Supports wildcards (*).",
+			"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Crafting guild\"), each on its own line. Supports wildcards (*).",
 		section = maxCapeMenus,
 		position = 3
 	)
