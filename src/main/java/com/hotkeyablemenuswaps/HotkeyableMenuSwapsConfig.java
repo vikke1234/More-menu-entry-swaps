@@ -157,71 +157,62 @@ public interface HotkeyableMenuSwapsConfig extends Config
 	@ConfigSection(name = "Diary Cape Menus", description = "", position = -7, closedByDefault = true)
 	String diaryCapeMenus = "Diary Cape Menus";
 	@ConfigItem(
-			keyName = "diaryCapeSwaps",
-			name = "Diary Cape Swaps",
-			description = "*** Requires vanilla sub menus enabled *** Diary cape entries to bring out of the menu. Supports wildcards (*).",
+			keyName = "diaryCapeSort",
+			name = "Diary Cape Sort",
+			description = "*** Requires sub menus enabled in Menu Entry Swapper plugin ***<br>" +
+				"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Jarr\"). Supports wildcards (*).",
 			section = diaryCapeMenus,
 			position = 3
 	)
-	default String diaryCapeMenus() {
+	default String diaryCapeSort() {
 		return "";
 	}
 
 	@ConfigItem(
-			keyName = "diaryCapeSubmenus",
-			name = "Use diary cape submenus",
-			description = "",
-			section = diaryCapeMenus,
-			position = 1
+		keyName = "hideDiaryTeleportsSubmenu",
+		name = "Hide \"Teleports\" submenu",
+		description = "",
+		section = diaryCapeMenus,
+		position = 1
 	)
-	default boolean useDiarySubmenus() {
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "hideDiaryUsedSubmenus",
-			name = "Hide used submenus",
-			description = "",
-			section = diaryCapeMenus,
-			position = 2
-	)
-	default boolean hideDiaryUsedSubmenus() {
+	default boolean hideDiaryTeleportsSubmenu() {
 		return false;
 	}
 
 	@ConfigSection(name = "Max Cape Menus", description = "", position = -7, closedByDefault = true)
 	String maxCapeMenus = "Max Cape Menus";
 	@ConfigItem(
-			keyName = "maxCapeSwaps",
-			name = "Max Cape Swaps",
-			description = "*** Requires vanilla sub menus enabled *** Max cape entries to bring out of the menu. Supports wildcards (*).",
-			section = maxCapeMenus,
-			position = 3
+		keyName = "maxCapeSort",
+		name = "Max Cape Sort",
+		description = "*** Requires sub menus enabled in Menu Entry Swapper plugin ***<br>" +
+			"Sorts the menu entries on the cape. Only include the option (e.g. \"Wear\" or \"Crafting guild\"). Supports wildcards (*).",
+		section = maxCapeMenus,
+		position = 3
 	)
 	default String maxCapeSort() {
 		return "";
 	}
 
 	@ConfigItem(
-			keyName = "maxCapeSubmenus",
-			name = "Use max cape submenus",
-			description = "",
-			section = maxCapeMenus,
-			position = 1
+		keyName = "hideMaxCapeTeleportsSubmenu",
+		name = "Hide \"Teleports\" submenu",
+		description = "",
+		section = maxCapeMenus,
+		position = 1
 	)
-	default boolean useMaxSubmenus() {
-		return true;
+	default boolean hideMaxCapeTeleportsSubmenu() {
+		return false;
 	}
 
 	@ConfigItem(
-			keyName = "hideUsedMaxSubmenus",
-			name = "Hide used submenus",
-			description = "",
-			section = maxCapeMenus,
-			position = 2
+		keyName = "hideMaxCapeFeaturesSubmenu",
+		name = "Don't add \"Features\" submenu",
+		description = "",
+		section = maxCapeMenus,
+		position = 2
 	)
-	default boolean hideUsedMaxSubmenus() {
-		return false;
+	default boolean hideMaxCapeFeaturesSubmenu() {
+		return true;
 	}
 
 	@ConfigSection(name = "Advanced", description = "Advanced options", position = -6, closedByDefault = true)
