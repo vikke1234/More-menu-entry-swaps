@@ -141,6 +141,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 
 		reloadCustomSwaps();
 		reloadGroundItemSort();
+		reloadCapeSort();
 
 		resetHotkeys();
 
@@ -719,23 +720,58 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	@Subscribe(priority = -1) // This will run after the normal menu entry swapper, so it won't interfere with this plugin.
 	public void onPostMenuSort(PostMenuSort e)
 	{
+		maxCapeStuff();
 		sortGroundItems();
 		customSwaps();
 
-		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
+		MenuEntry[] menuEntries = client.getMenuEntries();
 
 		if (menuEntries.length == 0) return;
 
 		spellbookSwapSwaps(menuEntries);
-		// TODO: remove once real submenus get released
-		createMaxSubmenu();
-		sortAndAdd(Collections.singletonList(ItemID.MAX_CAPE), escapeRegex(config.maxCapeMenus()), config.hideUsedMaxSubmenus(), config.useMaxSubmenus());
-		sortAndAdd(List.of(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T), escapeRegex(config.diaryCapeMenus()), config.hideDiaryUsedSubmenus(), config.useDiarySubmenus());
 
 		mesPluginStyleSwaps(menuEntries);
 	}
-	private void createMaxSubmenu() {
-		Map<String, MenuEntry> menuMap = getMenuMap();
+
+	private void maxCapeStuff() {
+		if (maxCapeSort.isEmpty() && achievementDiaryCapeSort.isEmpty()) return;
+
+		// TODO: remove once real submenus get released
+		MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
+		MenuEntry topEntry = menuEntries[menuEntries.length - 1];
+		Widget widget = topEntry.getWidget();
+		if (widget == null) return;
+		int interfaceId = WidgetUtil.componentToInterface(widget.getId());
+		if (interfaceId != InterfaceID.EQUIPMENT && interfaceId != InterfaceID.INVENTORY) return;
+		int itemId = topEntry.getItemId();
+
+		if (itemId == ItemID.MAX_CAPE) {
+			Map<String, MenuEntry> menuMap = getMenuMap();
+			createMaxSubmenu(menuMap);
+			sortAndAdd(menuMap, maxCapeSort);
+			if (config.hideMaxCapeTeleportsSubmenu()) {
+				menuMap.get("teleports").deleteSubMenu();
+			}
+			if (config.hideMaxCapeFeaturesSubmenu()) {
+				menuMap.get("features").deleteSubMenu();
+			}
+		} else if (itemId == ItemID.ACHIEVEMENT_DIARY_CAPE || itemId == ItemID.ACHIEVEMENT_DIARY_CAPE_T) {
+			Map<String, MenuEntry> menuMap = getMenuMap();
+			sortAndAdd(menuMap, achievementDiaryCapeSort);
+			if (config.hideDiaryTeleportsSubmenu()) {
+				menuMap.get("Teleports").deleteSubMenu();
+			}
+		}
+	}
+
+	private List<String> maxCapeSort = new ArrayList<>();
+	private List<String> achievementDiaryCapeSort = new ArrayList<>();
+	private void reloadCapeSort() {
+		maxCapeSort = escapeRegex(config.maxCapeSort());
+		achievementDiaryCapeSort = escapeRegex(config.diaryCapeSort());
+	}
+
+	private void createMaxSubmenu(Map<String, MenuEntry> menuMap) {
 		MenuEntry features = menuMap.get("features");
 		if (features == null || features.getItemId() != ItemID.MAX_CAPE) {
 			return;
@@ -800,7 +836,9 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 		String regexSpecialCharacters = "\\.\\+\\?\\(\\)\\|\\[\\]\\{\\}\\^\\$\\\\";
 		Pattern regexEscapes = Pattern.compile("([" + regexSpecialCharacters +"])");
 		Matcher regexEscapeMatcher = regexEscapes.matcher(conf.toLowerCase().strip());
-		return Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
+		List<String> strings = Arrays.asList(regexEscapeMatcher.replaceAll("\\\\$1").replace("*", ".*").split("\n"));
+		System.out.println(strings);
+		return strings;
 	}
 
 	private List<MenuEntry> searchSubmenus(List<MenuEntry> parents, List<String> names) {
@@ -827,13 +865,10 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	 *
 	 * @return Submenu parents that are used for a set of patterns
 	 */
-	private List<MenuEntry> getParents(List<Integer> itemIDs, List<String> patterns) {
+	private List<MenuEntry> getParents(List<String> patterns) {
 		Menu menu = client.getMenu();
 		List<MenuEntry> submenus = Arrays.stream(menu.getMenuEntries())
 				.filter(menuEntry -> {
-					if (!itemIDs.contains(menuEntry.getItemId())) {
-						return false;
-					}
 					Menu submenu = menuEntry.getSubMenu();
 
 					if (submenu != null) {
@@ -856,13 +891,11 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 	/**
 	 * Sorts the menu in the given order and adds menus from submenus
 	 */
-	private void sortAndAdd(List<Integer> itemIDs, List<String> conf, boolean hideUsed, boolean useSubmenus) {
+	private void sortAndAdd(Map<String, MenuEntry> menuMap, List<String> conf) {
 		Menu menu = client.getMenu();
 		MenuEntry[] menuEntries = menu.getMenuEntries();
 
-		Map<String, MenuEntry> menuMap = getMenuMap();
-
-		List<MenuEntry> parents = getParents(itemIDs, conf);
+		List<MenuEntry> parents = getParents(conf);
 		if (parents.isEmpty()) return;
 		List<MenuEntry> teleportEntries = searchSubmenus(parents, conf);
 
@@ -893,15 +926,6 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			}
 			index--;
 		}
-
-		if (!useSubmenus) {
-			menuMap.values().forEach(MenuEntry::deleteSubMenu);
-		}
-		if (hideUsed) {
-				for (MenuEntry e : parents) {
-					e.deleteSubMenu();
-				}
-			}
 	}
 
 	private void pauseresume(@Component int comp, int op)
@@ -1374,6 +1398,7 @@ public class HotkeyableMenuSwapsPlugin extends Plugin implements KeyListener
 			keybindCache.clear();
 			reloadCustomSwaps();
 			reloadGroundItemSort();
+			reloadCapeSort();
 			examineCancelLateRemoval = config.examineCancelLateRemoval();
 		} else if (configChanged.getGroup().equals("grounditems") && (configChanged.getKey().equals("highlightedItems") || configChanged.getKey().equals("hiddenItems"))) {
 			groundItemsStuff.reloadGroundItemPluginLists(groundItemsPriceSortMode != DISABLED, highlightedItemValue != null, hiddenItemValue != null, true);
